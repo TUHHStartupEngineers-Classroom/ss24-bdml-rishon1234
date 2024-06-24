@@ -6,7 +6,8 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="author" content="Rishon Noel Saldanha">
+<meta name="author" content="Joschka Schwarz">
+<meta name="dcterms.date" content="2024-06-22">
 
 <title>MyLabJournal – 02 Supervised ML</title>
 <style>
@@ -187,16 +188,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
 <!-- sidebar -->
 <!-- margin-sidebar -->
-    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
-        <nav id="TOC" role="doc-toc" class="toc-active">
-    <h2 id="toc-title">Contents</h2>
-   
-  <ul class="collapse">
-  <li><a href="#libraries" id="toc-libraries" class="nav-link active" data-scroll-target="#libraries"><span class="header-section-number">1</span> Libraries</a></li>
-  <li><a href="#data" id="toc-data" class="nav-link" data-scroll-target="#data"><span class="header-section-number">2</span> Data</a></li>
-  <li><a href="#visualization" id="toc-visualization" class="nav-link" data-scroll-target="#visualization"><span class="header-section-number">3</span> Visualization</a></li>
-  </ul>
-</nav>
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
+        
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
@@ -213,10 +206,16 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Author</div>
     <div class="quarto-title-meta-contents">
-             <p>Rishon Noel Saldanha </p>
+             <p>Joschka Schwarz </p>
           </div>
   </div>
     
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">June 22, 2024</p>
+    </div>
+  </div>
   
     
   </div>
@@ -226,177 +225,488 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<p>Load the absolute path to the data directory.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a>data_dir <span class="ot">&lt;-</span> params<span class="sc">$</span>data_dir</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a><span class="fu">library</span>(tidymodels)</span>
+<span id="cb1-2"><a href="#cb1-2"></a><span class="fu">library</span>(broom.mixed)</span>
+<span id="cb1-3"><a href="#cb1-3"></a><span class="fu">library</span>(xgboost)</span>
+<span id="cb1-4"><a href="#cb1-4"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb1-5"><a href="#cb1-5"></a><span class="fu">library</span>(parsnip)</span>
+<span id="cb1-6"><a href="#cb1-6"></a><span class="fu">library</span>(recipes)</span>
+<span id="cb1-7"><a href="#cb1-7"></a><span class="fu">library</span>(rsample)</span>
+<span id="cb1-8"><a href="#cb1-8"></a><span class="fu">library</span>(yardstick)</span>
+<span id="cb1-9"><a href="#cb1-9"></a><span class="fu">library</span>(rpart.plot)</span>
+<span id="cb1-10"><a href="#cb1-10"></a><span class="fu">library</span>(modeldata)</span>
+<span id="cb1-11"><a href="#cb1-11"></a><span class="co"># Data exploration</span></span>
+<span id="cb1-12"><a href="#cb1-12"></a>bike_data_tbl <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="st">"C:/Users/risho/OneDrive/Desktop/internship_sparks/ss24-bdml-rishon1234/ML/data/Business Decisions with Machine Learning/bike_orderlines.rds"</span>)</span>
+<span id="cb1-13"><a href="#cb1-13"></a>model_sales_tbl <span class="ot">&lt;-</span> bike_data_tbl <span class="sc">%&gt;%</span></span>
+<span id="cb1-14"><a href="#cb1-14"></a>  <span class="fu">select</span>(total_price, model, category_2, frame_material) <span class="sc">%&gt;%</span></span>
+<span id="cb1-15"><a href="#cb1-15"></a>  </span>
+<span id="cb1-16"><a href="#cb1-16"></a>  <span class="fu">group_by</span>(model, category_2, frame_material) <span class="sc">%&gt;%</span></span>
+<span id="cb1-17"><a href="#cb1-17"></a>  <span class="fu">summarise</span>(<span class="at">total_sales =</span> <span class="fu">sum</span>(total_price)) <span class="sc">%&gt;%</span></span>
+<span id="cb1-18"><a href="#cb1-18"></a>  <span class="fu">ungroup</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb1-19"><a href="#cb1-19"></a>  </span>
+<span id="cb1-20"><a href="#cb1-20"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(total_sales))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>#&gt; `summarise()` has grouped output by 'model', 'category_2'. You can override
+#&gt; using the `.groups` argument.</code></pre>
 </div>
-<section id="libraries" class="level1" data-number="1">
-<h1 data-number="1"><span class="header-section-number">1</span> Libraries</h1>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1"></a><span class="fu">library</span>(tidymodels)</span>
-<span id="cb2-2"><a href="#cb2-2"></a><span class="fu">library</span>(tidyverse)</span>
-<span id="cb2-3"><a href="#cb2-3"></a><span class="fu">library</span>(recipes)</span>
-<span id="cb2-4"><a href="#cb2-4"></a><span class="fu">library</span>(rsample)</span>
-<span id="cb2-5"><a href="#cb2-5"></a><span class="fu">library</span>(yardstick)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1"></a>model_sales_tbl <span class="sc">%&gt;%</span></span>
+<span id="cb3-2"><a href="#cb3-2"></a>  <span class="fu">mutate</span>(<span class="at">category_2 =</span> <span class="fu">as_factor</span>(category_2) <span class="sc">%&gt;%</span> </span>
+<span id="cb3-3"><a href="#cb3-3"></a>           <span class="fu">fct_reorder</span>(total_sales, <span class="at">.fun =</span> max) <span class="sc">%&gt;%</span> </span>
+<span id="cb3-4"><a href="#cb3-4"></a>           <span class="fu">fct_rev</span>()) <span class="sc">%&gt;%</span></span>
+<span id="cb3-5"><a href="#cb3-5"></a>  </span>
+<span id="cb3-6"><a href="#cb3-6"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(frame_material, total_sales)) <span class="sc">+</span></span>
+<span id="cb3-7"><a href="#cb3-7"></a>  <span class="fu">geom_violin</span>() <span class="sc">+</span></span>
+<span id="cb3-8"><a href="#cb3-8"></a>  <span class="fu">geom_jitter</span>(<span class="at">width =</span> <span class="fl">0.1</span>, <span class="at">alpha =</span> <span class="fl">0.5</span>, <span class="at">color =</span> <span class="st">"#800080"</span>) <span class="sc">+</span></span>
+<span id="cb3-9"><a href="#cb3-9"></a>  <span class="co">#coord_flip() +</span></span>
+<span id="cb3-10"><a href="#cb3-10"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span> category_2) <span class="sc">+</span></span>
+<span id="cb3-11"><a href="#cb3-11"></a>  <span class="fu">scale_y_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span><span class="fu">dollar_format</span>(<span class="at">scale =</span> <span class="fl">1e-6</span>, <span class="at">suffix =</span> <span class="st">"M"</span>, <span class="at">accuracy =</span> <span class="fl">0.1</span>)) <span class="sc">+</span></span>
+<span id="cb3-12"><a href="#cb3-12"></a>  tidyquant<span class="sc">::</span><span class="fu">theme_tq</span>() <span class="sc">+</span></span>
+<span id="cb3-13"><a href="#cb3-13"></a>  <span class="fu">labs</span>(</span>
+<span id="cb3-14"><a href="#cb3-14"></a>    <span class="at">title =</span> <span class="st">"Total Sales for Each Model"</span>,</span>
+<span id="cb3-15"><a href="#cb3-15"></a>    <span class="at">x =</span> <span class="st">"Frame Material"</span>, <span class="at">y =</span> <span class="st">"Revenue"</span></span>
+<span id="cb3-16"><a href="#cb3-16"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>#&gt; Registered S3 method overwritten by 'quantmod':
+#&gt;   method            from
+#&gt;   as.zoo.data.frame zoo</code></pre>
 </div>
-</section>
-<section id="data" class="level1" data-number="2">
-<h1 data-number="2"><span class="header-section-number">2</span> Data</h1>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1"></a>bike_features_tbl <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="st">"C:/Users/risho/OneDrive/Desktop/internship_sparks/ss24-bdml-rishon1234/ML/data/Business Decisions with Machine Learning/bike_features_tbl.rds"</span>)</span>
-<span id="cb3-2"><a href="#cb3-2"></a>bike_features_tbl <span class="sc">|&gt;</span> <span class="fu">as_tibble</span>() <span class="sc">|&gt;</span> <span class="fu">print</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>#&gt; Warning: Groups with fewer than two datapoints have been dropped.
+#&gt; ℹ Set `drop = FALSE` to consider such groups for position adjustment purposes.
+#&gt; Groups with fewer than two datapoints have been dropped.
+#&gt; ℹ Set `drop = FALSE` to consider such groups for position adjustment purposes.
+#&gt; Groups with fewer than two datapoints have been dropped.
+#&gt; ℹ Set `drop = FALSE` to consider such groups for position adjustment purposes.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>#&gt; Warning in max(data$density, na.rm = TRUE): no non-missing arguments to max;
+#&gt; returning -Inf</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>#&gt; Warning: Computation failed in `stat_ydensity()`.
+#&gt; Caused by error in `$&lt;-.data.frame`:
+#&gt; ! replacement has 1 row, data has 0</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><a href="02_supervised_ml_files/figure-html/unnamed-chunk-1-1.png" class="lightbox" data-gallery="quarto-lightbox-gallery-1"><img src="02_supervised_ml_files/figure-html/unnamed-chunk-1-1.png" class="img-fluid figure-img" width="672"></a></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1"></a>bike_features_tbl <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="st">"C:/Users/risho/OneDrive/Desktop/internship_sparks/ss24-bdml-rishon1234/ML/data/Business Decisions with Machine Learning/bike_features_tbl.rds"</span>)</span>
+<span id="cb8-2"><a href="#cb8-2"></a>bike_features_tbl <span class="ot">&lt;-</span> bike_features_tbl <span class="sc">%&gt;%</span> </span>
+<span id="cb8-3"><a href="#cb8-3"></a>  <span class="fu">select</span>(frame_material<span class="sc">:</span>gender, <span class="st">`</span><span class="at">Rear Derailleur</span><span class="st">`</span>, <span class="st">`</span><span class="at">Shift Lever</span><span class="st">`</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb8-4"><a href="#cb8-4"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb8-5"><a href="#cb8-5"></a>    <span class="st">`</span><span class="at">shimano dura-ace</span><span class="st">`</span>        <span class="ot">=</span> <span class="st">`</span><span class="at">Rear Derailleur</span><span class="st">`</span> <span class="sc">%&gt;%</span> <span class="fu">str_to_lower</span>() <span class="sc">%&gt;%</span> <span class="fu">str_detect</span>(<span class="st">"shimano dura-ace "</span>) <span class="sc">%&gt;%</span> <span class="fu">as.numeric</span>(),</span>
+<span id="cb8-6"><a href="#cb8-6"></a>    <span class="st">`</span><span class="at">shimano ultegra</span><span class="st">`</span>         <span class="ot">=</span> <span class="st">`</span><span class="at">Rear Derailleur</span><span class="st">`</span> <span class="sc">%&gt;%</span> <span class="fu">str_to_lower</span>() <span class="sc">%&gt;%</span> <span class="fu">str_detect</span>(<span class="st">"shimano ultegra "</span>) <span class="sc">%&gt;%</span> <span class="fu">as.numeric</span>(),</span>
+<span id="cb8-7"><a href="#cb8-7"></a>    <span class="st">`</span><span class="at">shimano 105</span><span class="st">`</span>             <span class="ot">=</span> <span class="st">`</span><span class="at">Rear Derailleur</span><span class="st">`</span> <span class="sc">%&gt;%</span> <span class="fu">str_to_lower</span>() <span class="sc">%&gt;%</span> <span class="fu">str_detect</span>(<span class="st">"shimano 105 "</span>) <span class="sc">%&gt;%</span> <span class="fu">as.numeric</span>(),</span>
+<span id="cb8-8"><a href="#cb8-8"></a>    <span class="st">`</span><span class="at">shimano tiagra</span><span class="st">`</span>          <span class="ot">=</span> <span class="st">`</span><span class="at">Rear Derailleur</span><span class="st">`</span> <span class="sc">%&gt;%</span> <span class="fu">str_to_lower</span>() <span class="sc">%&gt;%</span> <span class="fu">str_detect</span>(<span class="st">"shimano tiagra "</span>) <span class="sc">%&gt;%</span> <span class="fu">as.numeric</span>(),</span>
+<span id="cb8-9"><a href="#cb8-9"></a>    <span class="st">`</span><span class="at">Shimano sora</span><span class="st">`</span>            <span class="ot">=</span> <span class="st">`</span><span class="at">Rear Derailleur</span><span class="st">`</span> <span class="sc">%&gt;%</span> <span class="fu">str_to_lower</span>() <span class="sc">%&gt;%</span> <span class="fu">str_detect</span>(<span class="st">"shimano sora"</span>) <span class="sc">%&gt;%</span> <span class="fu">as.numeric</span>(),</span>
+<span id="cb8-10"><a href="#cb8-10"></a>    <span class="st">`</span><span class="at">shimano deore</span><span class="st">`</span>           <span class="ot">=</span> <span class="st">`</span><span class="at">Rear Derailleur</span><span class="st">`</span> <span class="sc">%&gt;%</span> <span class="fu">str_to_lower</span>() <span class="sc">%&gt;%</span> <span class="fu">str_detect</span>(<span class="st">"shimano deore(?! xt)"</span>) <span class="sc">%&gt;%</span> <span class="fu">as.numeric</span>(),</span>
+<span id="cb8-11"><a href="#cb8-11"></a>    <span class="st">`</span><span class="at">shimano slx</span><span class="st">`</span>             <span class="ot">=</span> <span class="st">`</span><span class="at">Rear Derailleur</span><span class="st">`</span> <span class="sc">%&gt;%</span> <span class="fu">str_to_lower</span>() <span class="sc">%&gt;%</span> <span class="fu">str_detect</span>(<span class="st">"shimano slx"</span>) <span class="sc">%&gt;%</span> <span class="fu">as.numeric</span>(),</span>
+<span id="cb8-12"><a href="#cb8-12"></a>    <span class="st">`</span><span class="at">shimano grx</span><span class="st">`</span>             <span class="ot">=</span> <span class="st">`</span><span class="at">Rear Derailleur</span><span class="st">`</span> <span class="sc">%&gt;%</span> <span class="fu">str_to_lower</span>() <span class="sc">%&gt;%</span> <span class="fu">str_detect</span>(<span class="st">"shimano grx"</span>) <span class="sc">%&gt;%</span> <span class="fu">as.numeric</span>(),</span>
+<span id="cb8-13"><a href="#cb8-13"></a>    <span class="st">`</span><span class="at">Shimano xt</span><span class="st">`</span>              <span class="ot">=</span> <span class="st">`</span><span class="at">Rear Derailleur</span><span class="st">`</span> <span class="sc">%&gt;%</span> <span class="fu">str_to_lower</span>() <span class="sc">%&gt;%</span> <span class="fu">str_detect</span>(<span class="st">"shimano deore xt |shimano xt "</span>) <span class="sc">%&gt;%</span> <span class="fu">as.numeric</span>(),</span>
+<span id="cb8-14"><a href="#cb8-14"></a>    <span class="st">`</span><span class="at">Shimano xtr</span><span class="st">`</span>             <span class="ot">=</span> <span class="st">`</span><span class="at">Rear Derailleur</span><span class="st">`</span> <span class="sc">%&gt;%</span> <span class="fu">str_to_lower</span>() <span class="sc">%&gt;%</span> <span class="fu">str_detect</span>(<span class="st">"shimano xtr"</span>) <span class="sc">%&gt;%</span> <span class="fu">as.numeric</span>(),</span>
+<span id="cb8-15"><a href="#cb8-15"></a>    <span class="st">`</span><span class="at">Shimano saint</span><span class="st">`</span>           <span class="ot">=</span> <span class="st">`</span><span class="at">Rear Derailleur</span><span class="st">`</span> <span class="sc">%&gt;%</span> <span class="fu">str_to_lower</span>() <span class="sc">%&gt;%</span> <span class="fu">str_detect</span>(<span class="st">"shimano saint"</span>) <span class="sc">%&gt;%</span> <span class="fu">as.numeric</span>(),</span>
+<span id="cb8-16"><a href="#cb8-16"></a>    <span class="st">`</span><span class="at">SRAM red</span><span class="st">`</span>                <span class="ot">=</span> <span class="st">`</span><span class="at">Rear Derailleur</span><span class="st">`</span> <span class="sc">%&gt;%</span> <span class="fu">str_to_lower</span>() <span class="sc">%&gt;%</span> <span class="fu">str_detect</span>(<span class="st">"sram red"</span>) <span class="sc">%&gt;%</span> <span class="fu">as.numeric</span>(),</span>
+<span id="cb8-17"><a href="#cb8-17"></a>    <span class="st">`</span><span class="at">SRAM force</span><span class="st">`</span>              <span class="ot">=</span> <span class="st">`</span><span class="at">Rear Derailleur</span><span class="st">`</span> <span class="sc">%&gt;%</span> <span class="fu">str_to_lower</span>() <span class="sc">%&gt;%</span> <span class="fu">str_detect</span>(<span class="st">"sram force"</span>) <span class="sc">%&gt;%</span> <span class="fu">as.numeric</span>(),</span>
+<span id="cb8-18"><a href="#cb8-18"></a>    <span class="st">`</span><span class="at">SRAM rival</span><span class="st">`</span>              <span class="ot">=</span> <span class="st">`</span><span class="at">Rear Derailleur</span><span class="st">`</span> <span class="sc">%&gt;%</span> <span class="fu">str_to_lower</span>() <span class="sc">%&gt;%</span> <span class="fu">str_detect</span>(<span class="st">"sram rival"</span>) <span class="sc">%&gt;%</span> <span class="fu">as.numeric</span>(),</span>
+<span id="cb8-19"><a href="#cb8-19"></a>    <span class="st">`</span><span class="at">SRAM apex</span><span class="st">`</span>               <span class="ot">=</span> <span class="st">`</span><span class="at">Rear Derailleur</span><span class="st">`</span> <span class="sc">%&gt;%</span> <span class="fu">str_to_lower</span>() <span class="sc">%&gt;%</span> <span class="fu">str_detect</span>(<span class="st">"sram apex"</span>) <span class="sc">%&gt;%</span> <span class="fu">as.numeric</span>(),</span>
+<span id="cb8-20"><a href="#cb8-20"></a>    <span class="st">`</span><span class="at">SRAM xx1</span><span class="st">`</span>                <span class="ot">=</span> <span class="st">`</span><span class="at">Rear Derailleur</span><span class="st">`</span> <span class="sc">%&gt;%</span> <span class="fu">str_to_lower</span>() <span class="sc">%&gt;%</span> <span class="fu">str_detect</span>(<span class="st">"sram xx1"</span>) <span class="sc">%&gt;%</span> <span class="fu">as.numeric</span>(),</span>
+<span id="cb8-21"><a href="#cb8-21"></a>    <span class="st">`</span><span class="at">SRAM x01</span><span class="st">`</span>                <span class="ot">=</span> <span class="st">`</span><span class="at">Rear Derailleur</span><span class="st">`</span> <span class="sc">%&gt;%</span> <span class="fu">str_to_lower</span>() <span class="sc">%&gt;%</span> <span class="fu">str_detect</span>(<span class="st">"sram x01|sram xo1"</span>) <span class="sc">%&gt;%</span> <span class="fu">as.numeric</span>(),</span>
+<span id="cb8-22"><a href="#cb8-22"></a>    <span class="st">`</span><span class="at">SRAM gx</span><span class="st">`</span>                 <span class="ot">=</span> <span class="st">`</span><span class="at">Rear Derailleur</span><span class="st">`</span> <span class="sc">%&gt;%</span> <span class="fu">str_to_lower</span>() <span class="sc">%&gt;%</span> <span class="fu">str_detect</span>(<span class="st">"sram gx"</span>) <span class="sc">%&gt;%</span> <span class="fu">as.numeric</span>(),</span>
+<span id="cb8-23"><a href="#cb8-23"></a>    <span class="st">`</span><span class="at">SRAM nx</span><span class="st">`</span>                 <span class="ot">=</span> <span class="st">`</span><span class="at">Rear Derailleur</span><span class="st">`</span> <span class="sc">%&gt;%</span> <span class="fu">str_to_lower</span>() <span class="sc">%&gt;%</span> <span class="fu">str_detect</span>(<span class="st">"sram nx"</span>) <span class="sc">%&gt;%</span> <span class="fu">as.numeric</span>(),</span>
+<span id="cb8-24"><a href="#cb8-24"></a>    <span class="st">`</span><span class="at">SRAM sx</span><span class="st">`</span>                 <span class="ot">=</span> <span class="st">`</span><span class="at">Rear Derailleur</span><span class="st">`</span> <span class="sc">%&gt;%</span> <span class="fu">str_to_lower</span>() <span class="sc">%&gt;%</span> <span class="fu">str_detect</span>(<span class="st">"sram sx"</span>) <span class="sc">%&gt;%</span> <span class="fu">as.numeric</span>(),</span>
+<span id="cb8-25"><a href="#cb8-25"></a>    <span class="st">`</span><span class="at">SRAM sx</span><span class="st">`</span>                 <span class="ot">=</span> <span class="st">`</span><span class="at">Rear Derailleur</span><span class="st">`</span> <span class="sc">%&gt;%</span> <span class="fu">str_to_lower</span>() <span class="sc">%&gt;%</span> <span class="fu">str_detect</span>(<span class="st">"sram sx"</span>) <span class="sc">%&gt;%</span> <span class="fu">as.numeric</span>(),</span>
+<span id="cb8-26"><a href="#cb8-26"></a>    <span class="st">`</span><span class="at">Campagnolo potenza</span><span class="st">`</span>      <span class="ot">=</span> <span class="st">`</span><span class="at">Rear Derailleur</span><span class="st">`</span> <span class="sc">%&gt;%</span> <span class="fu">str_to_lower</span>() <span class="sc">%&gt;%</span> <span class="fu">str_detect</span>(<span class="st">"campagnolo potenza"</span>) <span class="sc">%&gt;%</span> <span class="fu">as.numeric</span>(),</span>
+<span id="cb8-27"><a href="#cb8-27"></a>    <span class="st">`</span><span class="at">Campagnolo super record</span><span class="st">`</span> <span class="ot">=</span> <span class="st">`</span><span class="at">Rear Derailleur</span><span class="st">`</span> <span class="sc">%&gt;%</span> <span class="fu">str_to_lower</span>() <span class="sc">%&gt;%</span> <span class="fu">str_detect</span>(<span class="st">"campagnolo super record"</span>) <span class="sc">%&gt;%</span> <span class="fu">as.numeric</span>(),</span>
+<span id="cb8-28"><a href="#cb8-28"></a>    <span class="st">`</span><span class="at">shimano nexus</span><span class="st">`</span>           <span class="ot">=</span> <span class="st">`</span><span class="at">Shift Lever</span><span class="st">`</span>     <span class="sc">%&gt;%</span> <span class="fu">str_to_lower</span>() <span class="sc">%&gt;%</span> <span class="fu">str_detect</span>(<span class="st">"shimano nexus"</span>) <span class="sc">%&gt;%</span> <span class="fu">as.numeric</span>(),</span>
+<span id="cb8-29"><a href="#cb8-29"></a>    <span class="st">`</span><span class="at">shimano alfine</span><span class="st">`</span>          <span class="ot">=</span> <span class="st">`</span><span class="at">Shift Lever</span><span class="st">`</span>     <span class="sc">%&gt;%</span> <span class="fu">str_to_lower</span>() <span class="sc">%&gt;%</span> <span class="fu">str_detect</span>(<span class="st">"shimano alfine"</span>) <span class="sc">%&gt;%</span> <span class="fu">as.numeric</span>()</span>
+<span id="cb8-30"><a href="#cb8-30"></a>  ) <span class="sc">%&gt;%</span>  </span>
+<span id="cb8-31"><a href="#cb8-31"></a>  <span class="fu">select</span>(<span class="sc">-</span><span class="fu">c</span>(<span class="st">`</span><span class="at">Rear Derailleur</span><span class="st">`</span>, <span class="st">`</span><span class="at">Shift Lever</span><span class="st">`</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb8-32"><a href="#cb8-32"></a>  <span class="fu">mutate_if</span>(is.numeric, <span class="sc">~</span><span class="fu">replace</span>(., <span class="fu">is.na</span>(.), <span class="dv">0</span>)) </span>
+<span id="cb8-33"><a href="#cb8-33"></a>bike_features_tbl <span class="ot">&lt;-</span> bike_features_tbl <span class="sc">%&gt;%</span> </span>
+<span id="cb8-34"><a href="#cb8-34"></a>  <span class="fu">mutate</span>(<span class="at">id =</span> <span class="fu">row_number</span>()) <span class="sc">%&gt;%</span> </span>
+<span id="cb8-35"><a href="#cb8-35"></a>  <span class="fu">mutate</span>(<span class="at">frame_material =</span> <span class="fu">factor</span>(frame_material)) <span class="sc">%&gt;%</span></span>
+<span id="cb8-36"><a href="#cb8-36"></a>  <span class="fu">select</span>(id, <span class="fu">everything</span>()) </span>
+<span id="cb8-37"><a href="#cb8-37"></a>bike_features_tbl <span class="sc">%&gt;%</span> <span class="fu">distinct</span>(category_2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div data-pagedtable="false">
+  <script data-pagedtable-source="" type="application/json">
+{"columns":[{"label":["category_2"],"name":[1],"type":["chr"],"align":["left"]}],"data":[{"1":"Race"},{"1":"Endurance"},{"1":"E-Road"},{"1":"Cyclocross"},{"1":"Triathlon Bike"},{"1":"Fat Bikes"},{"1":"Cross-Country"},{"1":"Adventure"},{"1":"All-Road"},{"1":"E-Gravel"},{"1":"Trail"},{"1":"E-Mountain"},{"1":"Downhill"},{"1":"Dirt Jump"},{"1":"Enduro"},{"1":"E-City"},{"1":"E-Trekking"},{"1":"E-Fitness"},{"1":"City"},{"1":"Touring"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1"></a>split_obj <span class="ot">&lt;-</span> rsample<span class="sc">::</span><span class="fu">initial_split</span>(bike_features_tbl, <span class="at">prop   =</span> <span class="fl">0.80</span>, </span>
+<span id="cb9-2"><a href="#cb9-2"></a>                                    <span class="at">strata =</span> <span class="st">"category_2"</span>)</span>
+<span id="cb9-3"><a href="#cb9-3"></a>split_obj <span class="sc">%&gt;%</span> <span class="fu">training</span>() <span class="sc">%&gt;%</span> <span class="fu">distinct</span>(category_2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div data-pagedtable="false">
+  <script data-pagedtable-source="" type="application/json">
+{"columns":[{"label":["category_2"],"name":[1],"type":["chr"],"align":["left"]}],"data":[{"1":"Race"},{"1":"Endurance"},{"1":"Cyclocross"},{"1":"Triathlon Bike"},{"1":"Fat Bikes"},{"1":"Cross-Country"},{"1":"All-Road"},{"1":"E-Gravel"},{"1":"Adventure"},{"1":"E-Mountain"},{"1":"Downhill"},{"1":"Dirt Jump"},{"1":"Enduro"},{"1":"E-City"},{"1":"E-Trekking"},{"1":"E-Fitness"},{"1":"City"},{"1":"Touring"},{"1":"E-Road"},{"1":"Trail"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1"></a>split_obj <span class="sc">%&gt;%</span> <span class="fu">testing</span>() <span class="sc">%&gt;%</span> <span class="fu">distinct</span>(category_2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div data-pagedtable="false">
+  <script data-pagedtable-source="" type="application/json">
+{"columns":[{"label":["category_2"],"name":[1],"type":["chr"],"align":["left"]}],"data":[{"1":"Race"},{"1":"Endurance"},{"1":"Cyclocross"},{"1":"Triathlon Bike"},{"1":"Cross-Country"},{"1":"All-Road"},{"1":"Trail"},{"1":"E-Mountain"},{"1":"Downhill"},{"1":"Enduro"},{"1":"E-Trekking"},{"1":"E-City"},{"1":"City"},{"1":"Touring"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1"></a>train_tbl <span class="ot">&lt;-</span> <span class="fu">training</span>(split_obj)</span>
+<span id="cb11-2"><a href="#cb11-2"></a>test_tbl  <span class="ot">&lt;-</span> <span class="fu">testing</span>(split_obj)</span>
+<span id="cb11-3"><a href="#cb11-3"></a>train_data <span class="ot">&lt;-</span> train_tbl <span class="sc">%&gt;%</span> <span class="fu">set_names</span>(<span class="fu">str_replace_all</span>(<span class="fu">names</span>(train_tbl), <span class="st">" |-"</span>, <span class="st">"_"</span>))</span>
+<span id="cb11-4"><a href="#cb11-4"></a>test_data  <span class="ot">&lt;-</span> test_tbl  <span class="sc">%&gt;%</span> <span class="fu">set_names</span>(<span class="fu">str_replace_all</span>(<span class="fu">names</span>(test_tbl),  <span class="st">" |-"</span>, <span class="st">"_"</span>))</span>
+<span id="cb11-5"><a href="#cb11-5"></a><span class="co"># recipe</span></span>
+<span id="cb11-6"><a href="#cb11-6"></a>bike_rec <span class="ot">&lt;-</span> </span>
+<span id="cb11-7"><a href="#cb11-7"></a>  <span class="fu">recipe</span>(frame_material <span class="sc">~</span> ., <span class="at">data =</span> train_data) <span class="sc">%&gt;%</span> </span>
+<span id="cb11-8"><a href="#cb11-8"></a>  <span class="fu">step_dummy</span>(<span class="fu">all_nominal</span>(), <span class="sc">-</span><span class="fu">all_outcomes</span>()) <span class="sc">%&gt;%</span> </span>
+<span id="cb11-9"><a href="#cb11-9"></a>  <span class="fu">step_zv</span>(<span class="fu">all_predictors</span>()) </span>
+<span id="cb11-10"><a href="#cb11-10"></a>d <span class="ot">&lt;-</span> <span class="fu">summary</span>(bike_rec)</span>
+<span id="cb11-11"><a href="#cb11-11"></a>lr_mod <span class="ot">&lt;-</span> </span>
+<span id="cb11-12"><a href="#cb11-12"></a>  <span class="fu">logistic_reg</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb11-13"><a href="#cb11-13"></a>  <span class="fu">set_engine</span>(<span class="st">"glm"</span>)</span>
+<span id="cb11-14"><a href="#cb11-14"></a>lr_mod</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>#&gt; # A tibble: 231 × 67
-#&gt;    bike_id model    model_year frame_material weight price category_1 category_2
-#&gt;      &lt;dbl&gt; &lt;chr&gt;         &lt;dbl&gt; &lt;chr&gt;           &lt;dbl&gt; &lt;dbl&gt; &lt;chr&gt;      &lt;chr&gt;     
-#&gt;  1    2875 Aeroad …       2020 carbon           7.6   4579 Road       Race      
-#&gt;  2    2873 Aeroad …       2020 carbon           7.27  6919 Road       Race      
-#&gt;  3    2874 Aeroad …       2020 carbon           7.1   6429 Road       Race      
-#&gt;  4    2876 Aeroad …       2020 carbon           7.73  5069 Road       Race      
-#&gt;  5    2877 Aeroad …       2020 carbon           7.83  3609 Road       Race      
-#&gt;  6    2225 Aeroad …       2019 carbon           6.8   6139 Road       Race      
-#&gt;  7    2091 Aeroad …       2019 carbon           6.8   5359 Road       Race      
-#&gt;  8    2086 Aeroad …       2021 carbon           7.6   2629 Road       Race      
-#&gt;  9    2088 Aeroad …       2020 carbon           7.3   3699 Road       Race      
-#&gt; 10    2120 Aeroad …       2020 carbon           7.2   3219 Road       Race      
-#&gt; # ℹ 221 more rows
-#&gt; # ℹ 59 more variables: category_3 &lt;chr&gt;, gender &lt;chr&gt;, url &lt;chr&gt;, Frame &lt;chr&gt;,
-#&gt; #   Fork &lt;chr&gt;, `Rear Derailleur` &lt;chr&gt;, `Front Derailleur` &lt;chr&gt;,
-#&gt; #   Cassette &lt;chr&gt;, Crank &lt;chr&gt;, `Bottom bracket` &lt;chr&gt;, `Thru Axle` &lt;chr&gt;,
-#&gt; #   Cockpit &lt;chr&gt;, Saddle &lt;chr&gt;, Seatpost &lt;chr&gt;, Pedals &lt;chr&gt;,
-#&gt; #   `Derailleur hanger` &lt;chr&gt;, Battery &lt;chr&gt;, Brake &lt;chr&gt;, `Shift Lever` &lt;chr&gt;,
-#&gt; #   Chain &lt;chr&gt;, Stem &lt;chr&gt;, Handlebar &lt;chr&gt;, Headset &lt;chr&gt;, Motor &lt;chr&gt;, …</code></pre>
+<pre><code>#&gt; Logistic Regression Model Specification (classification)
+#&gt; 
+#&gt; Computational engine: glm</code></pre>
 </div>
-</div>
-<p>Transform dataset</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1"></a>bike_features_trafo_tbl <span class="ot">&lt;-</span> bike_features_tbl <span class="sc">%&gt;%</span> </span>
-<span id="cb5-2"><a href="#cb5-2"></a>    <span class="fu">select</span>(model<span class="sc">:</span>url, <span class="st">`</span><span class="at">Rear Derailleur</span><span class="st">`</span>, <span class="st">`</span><span class="at">Shift Lever</span><span class="st">`</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb5-3"><a href="#cb5-3"></a>    <span class="fu">mutate_if</span>(is.numeric, <span class="sc">~</span><span class="fu">replace</span>(., <span class="fu">is.na</span>(.), <span class="dv">0</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb5-4"><a href="#cb5-4"></a>    <span class="fu">mutate</span>(<span class="at">id =</span> <span class="fu">row_number</span>()) <span class="sc">%&gt;%</span> </span>
-<span id="cb5-5"><a href="#cb5-5"></a>    <span class="fu">select</span>(id, <span class="fu">everything</span>(), <span class="sc">-</span>url)</span>
-<span id="cb5-6"><a href="#cb5-6"></a>bike_features_trafo_tbl <span class="sc">|&gt;</span> <span class="fu">as_tibble</span>() <span class="sc">|&gt;</span> <span class="fu">print</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1"></a>bike_wflow <span class="ot">&lt;-</span> </span>
+<span id="cb13-2"><a href="#cb13-2"></a>  <span class="fu">workflow</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb13-3"><a href="#cb13-3"></a>  <span class="fu">add_model</span>(lr_mod) <span class="sc">%&gt;%</span> </span>
+<span id="cb13-4"><a href="#cb13-4"></a>  <span class="fu">add_recipe</span>(bike_rec)</span>
+<span id="cb13-5"><a href="#cb13-5"></a>bike_wflow</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>#&gt; # A tibble: 231 × 12
-#&gt;       id model      model_year frame_material weight price category_1 category_2
-#&gt;    &lt;int&gt; &lt;chr&gt;           &lt;dbl&gt; &lt;chr&gt;           &lt;dbl&gt; &lt;dbl&gt; &lt;chr&gt;      &lt;chr&gt;     
-#&gt;  1     1 Aeroad CF…       2020 carbon           7.6   4579 Road       Race      
-#&gt;  2     2 Aeroad CF…       2020 carbon           7.27  6919 Road       Race      
-#&gt;  3     3 Aeroad CF…       2020 carbon           7.1   6429 Road       Race      
-#&gt;  4     4 Aeroad CF…       2020 carbon           7.73  5069 Road       Race      
-#&gt;  5     5 Aeroad CF…       2020 carbon           7.83  3609 Road       Race      
-#&gt;  6     6 Aeroad CF…       2019 carbon           6.8   6139 Road       Race      
-#&gt;  7     7 Aeroad CF…       2019 carbon           6.8   5359 Road       Race      
-#&gt;  8     8 Aeroad CF…       2021 carbon           7.6   2629 Road       Race      
-#&gt;  9     9 Aeroad CF…       2020 carbon           7.3   3699 Road       Race      
-#&gt; 10    10 Aeroad WM…       2020 carbon           7.2   3219 Road       Race      
-#&gt; # ℹ 221 more rows
-#&gt; # ℹ 4 more variables: category_3 &lt;chr&gt;, gender &lt;chr&gt;, `Rear Derailleur` &lt;chr&gt;,
-#&gt; #   `Shift Lever` &lt;chr&gt;</code></pre>
+<pre><code>#&gt; ══ Workflow ════════════════════════════════════════════════════════════════════
+#&gt; Preprocessor: Recipe
+#&gt; Model: logistic_reg()
+#&gt; 
+#&gt; ── Preprocessor ────────────────────────────────────────────────────────────────
+#&gt; 2 Recipe Steps
+#&gt; 
+#&gt; • step_dummy()
+#&gt; • step_zv()
+#&gt; 
+#&gt; ── Model ───────────────────────────────────────────────────────────────────────
+#&gt; Logistic Regression Model Specification (classification)
+#&gt; 
+#&gt; Computational engine: glm</code></pre>
 </div>
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1"></a>bike_fit <span class="ot">&lt;-</span> </span>
+<span id="cb15-2"><a href="#cb15-2"></a>  bike_wflow <span class="sc">%&gt;%</span> </span>
+<span id="cb15-3"><a href="#cb15-3"></a>  <span class="fu">fit</span>(<span class="at">data =</span> train_data)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>#&gt; Warning: glm.fit: algorithm did not converge</code></pre>
 </div>
-<p>Create training and testing dataset (Hold-out method)</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1"></a>bike_features_trafo_tbl <span class="sc">%&gt;%</span> <span class="fu">distinct</span>(category_2) <span class="sc">%&gt;%</span> <span class="fu">print</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>#&gt; Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1"></a>bike_fit</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>#&gt; # A tibble: 20 × 1
-#&gt;    category_2    
-#&gt;    &lt;chr&gt;         
-#&gt;  1 Race          
-#&gt;  2 Endurance     
-#&gt;  3 E-Road        
-#&gt;  4 Cyclocross    
-#&gt;  5 Triathlon Bike
-#&gt;  6 Fat Bikes     
-#&gt;  7 Cross-Country 
-#&gt;  8 Adventure     
-#&gt;  9 All-Road      
-#&gt; 10 E-Gravel      
-#&gt; 11 Trail         
-#&gt; 12 E-Mountain    
-#&gt; 13 Downhill      
-#&gt; 14 Dirt Jump     
-#&gt; 15 Enduro        
-#&gt; 16 E-City        
-#&gt; 17 E-Trekking    
-#&gt; 18 E-Fitness     
-#&gt; 19 City          
-#&gt; 20 Touring</code></pre>
+<pre><code>#&gt; ══ Workflow [trained] ══════════════════════════════════════════════════════════
+#&gt; Preprocessor: Recipe
+#&gt; Model: logistic_reg()
+#&gt; 
+#&gt; ── Preprocessor ────────────────────────────────────────────────────────────────
+#&gt; 2 Recipe Steps
+#&gt; 
+#&gt; • step_dummy()
+#&gt; • step_zv()
+#&gt; 
+#&gt; ── Model ───────────────────────────────────────────────────────────────────────
+#&gt; 
+#&gt; Call:  stats::glm(formula = ..y ~ ., family = stats::binomial, data = data)
+#&gt; 
+#&gt; Coefficients:
+#&gt;                (Intercept)                          id  
+#&gt;                 -9.990e+07                  -5.364e+04  
+#&gt;                     weight                       price  
+#&gt;                  2.379e+06                   2.187e+03  
+#&gt;           shimano_dura_ace             shimano_ultegra  
+#&gt;                 -5.954e+21                  -5.954e+21  
+#&gt;                shimano_105              shimano_tiagra  
+#&gt;                 -5.954e+21                  -5.954e+21  
+#&gt;              shimano_deore                 shimano_slx  
+#&gt;                 -5.181e+07                  -4.494e+15  
+#&gt;                shimano_grx                  Shimano_xt  
+#&gt;                 -5.954e+21                  -1.160e+09  
+#&gt;              Shimano_saint                    SRAM_red  
+#&gt;                  6.731e+08                  -5.954e+21  
+#&gt;                 SRAM_force                  SRAM_rival  
+#&gt;                 -5.954e+21                  -5.954e+21  
+#&gt;                  SRAM_apex                    SRAM_xx1  
+#&gt;                 -5.954e+21                  -1.777e+08  
+#&gt;                   SRAM_x01                     SRAM_gx  
+#&gt;                 -1.819e+08                  -9.665e+06  
+#&gt;                    SRAM_nx                     SRAM_sx  
+#&gt;                  9.109e+06                   5.544e+07  
+#&gt;         Campagnolo_potenza     Campagnolo_super_record  
+#&gt;                 -5.954e+21                  -5.954e+21  
+#&gt;              shimano_nexus              shimano_alfine  
+#&gt;                  1.063e+08                   1.820e+08  
+#&gt;          category_1_Gravel    category_1_Hybrid...City  
+#&gt;                  5.954e+21                  -1.768e+23  
+#&gt;        category_1_Mountain             category_1_Road  
+#&gt;                  5.854e+07                   5.954e+21  
+#&gt;        category_2_All.Road             category_2_City  
+#&gt;                  2.284e+07                   1.827e+23  
+#&gt;   category_2_Cross.Country       category_2_Cyclocross  
+#&gt;                  5.954e+21                   4.581e+10  
+#&gt;       category_2_Dirt.Jump         category_2_Downhill  
+#&gt;                 -2.050e+07                  -6.768e+08  
+#&gt;          category_2_E.City        category_2_E.Fitness  
+#&gt;                  4.675e+07                   4.112e+07  
+#&gt;        category_2_E.Gravel       category_2_E.Mountain  
+#&gt;                  5.954e+21                   4.845e+07  
+#&gt;          category_2_E.Road       category_2_E.Trekking  
+#&gt;                  5.954e+21                          NA  
+#&gt;       category_2_Endurance           category_2_Enduro  
+#&gt;                  1.495e+07                  -1.684e+07  
+#&gt;       category_2_Fat.Bikes             category_2_Race  
+#&gt;                  3.902e+07                   4.129e+15  
+#&gt; 
+#&gt; ...
+#&gt; and 36 more lines.</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
-<span id="cb9-2"><a href="#cb9-2"></a>split <span class="ot">&lt;-</span> <span class="fu">initial_split</span>(bike_features_trafo_tbl, <span class="at">prop =</span> <span class="dv">3</span><span class="sc">/</span><span class="dv">4</span>, <span class="at">strata =</span> <span class="st">"category_2"</span>)</span>
-<span id="cb9-3"><a href="#cb9-3"></a></span>
-<span id="cb9-4"><a href="#cb9-4"></a>split <span class="sc">%&gt;%</span> <span class="fu">training</span>() <span class="sc">%&gt;%</span> <span class="fu">distinct</span>(category_2) <span class="sc">%&gt;%</span> <span class="fu">print</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1"></a>bike_fit <span class="sc">%&gt;%</span> </span>
+<span id="cb20-2"><a href="#cb20-2"></a>  <span class="fu">pull_workflow_fit</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb20-3"><a href="#cb20-3"></a>  <span class="fu">tidy</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>#&gt; Warning: `pull_workflow_fit()` was deprecated in workflows 0.2.3.
+#&gt; ℹ Please use `extract_fit_parsnip()` instead.</code></pre>
+</div>
+<div class="cell-output-display">
+<div data-pagedtable="false">
+  <script data-pagedtable-source="" type="application/json">
+{"columns":[{"label":["term"],"name":[1],"type":["chr"],"align":["left"]},{"label":["estimate"],"name":[2],"type":["dbl"],"align":["right"]},{"label":["std.error"],"name":[3],"type":["dbl"],"align":["right"]},{"label":["statistic"],"name":[4],"type":["dbl"],"align":["right"]},{"label":["p.value"],"name":[5],"type":["dbl"],"align":["right"]}],"data":[{"1":"(Intercept)","2":"-9.989929e+07","3":"1.029109e+05","4":"-9.707355e+02","5":"0.000000e+00"},{"1":"id","2":"-5.363968e+04","3":"1.192141e-01","4":"-4.499441e+05","5":"0.000000e+00"},{"1":"weight","2":"2.378888e+06","3":"1.960066e+00","4":"1.213678e+06","5":"0.000000e+00"},{"1":"price","2":"2.186990e+03","3":"1.267087e-03","4":"1.725998e+06","5":"0.000000e+00"},{"1":"shimano_dura_ace","2":"-5.953945e+21","3":"1.128355e+15","4":"-5.276658e+06","5":"0.000000e+00"},{"1":"shimano_ultegra","2":"-5.953945e+21","3":"1.128355e+15","4":"-5.276658e+06","5":"0.000000e+00"},{"1":"shimano_105","2":"-5.953945e+21","3":"1.128355e+15","4":"-5.276658e+06","5":"0.000000e+00"},{"1":"shimano_tiagra","2":"-5.953945e+21","3":"1.128355e+15","4":"-5.276658e+06","5":"0.000000e+00"},{"1":"shimano_deore","2":"-5.181322e+07","3":"1.737715e+05","4":"-2.981687e+02","5":"0.000000e+00"},{"1":"shimano_slx","2":"-4.493625e+15","3":"4.748828e+07","4":"-9.462599e+07","5":"0.000000e+00"},{"1":"shimano_grx","2":"-5.953941e+21","3":"1.128355e+15","4":"-5.276655e+06","5":"0.000000e+00"},{"1":"Shimano_xt","2":"-1.160375e+09","3":"1.030532e+05","4":"-1.125996e+04","5":"0.000000e+00"},{"1":"Shimano_saint","2":"6.730685e+08","3":"2.349160e+05","4":"2.865146e+03","5":"0.000000e+00"},{"1":"SRAM_red","2":"-5.953945e+21","3":"1.128355e+15","4":"-5.276658e+06","5":"0.000000e+00"},{"1":"SRAM_force","2":"-5.953941e+21","3":"1.128355e+15","4":"-5.276655e+06","5":"0.000000e+00"},{"1":"SRAM_rival","2":"-5.953945e+21","3":"1.128355e+15","4":"-5.276658e+06","5":"0.000000e+00"},{"1":"SRAM_apex","2":"-5.953945e+21","3":"1.128355e+15","4":"-5.276658e+06","5":"0.000000e+00"},{"1":"SRAM_xx1","2":"-1.776662e+08","3":"2.209171e+05","4":"-8.042211e+02","5":"0.000000e+00"},{"1":"SRAM_x01","2":"-1.819326e+08","3":"1.300174e+03","4":"-1.399294e+05","5":"0.000000e+00"},{"1":"SRAM_gx","2":"-9.665011e+06","3":"1.918723e+00","4":"-5.037210e+06","5":"0.000000e+00"},{"1":"SRAM_nx","2":"9.108654e+06","3":"5.057594e+04","4":"1.800985e+02","5":"0.000000e+00"},{"1":"SRAM_sx","2":"5.544169e+07","3":"3.231368e+01","4":"1.715734e+06","5":"0.000000e+00"},{"1":"Campagnolo_potenza","2":"-5.953945e+21","3":"1.128355e+15","4":"-5.276658e+06","5":"0.000000e+00"},{"1":"Campagnolo_super_record","2":"-5.953941e+21","3":"1.128355e+15","4":"-5.276654e+06","5":"0.000000e+00"},{"1":"shimano_nexus","2":"1.063376e+08","3":"3.424278e+05","4":"3.105401e+02","5":"0.000000e+00"},{"1":"shimano_alfine","2":"1.819624e+08","3":"5.180422e+05","4":"3.512502e+02","5":"0.000000e+00"},{"1":"category_1_Gravel","2":"5.953941e+21","3":"1.128355e+15","4":"5.276655e+06","5":"0.000000e+00"},{"1":"category_1_Hybrid...City","2":"-1.767779e+23","3":"6.671473e+15","4":"-2.649758e+07","5":"0.000000e+00"},{"1":"category_1_Mountain","2":"5.853574e+07","3":"1.146673e+05","4":"5.104835e+02","5":"0.000000e+00"},{"1":"category_1_Road","2":"5.953945e+21","3":"1.128355e+15","4":"5.276658e+06","5":"0.000000e+00"},{"1":"category_2_All.Road","2":"2.283627e+07","3":"2.917511e+05","4":"7.827311e+01","5":"0.000000e+00"},{"1":"category_2_City","2":"1.827318e+23","3":"7.094099e+15","4":"2.575828e+07","5":"0.000000e+00"},{"1":"category_2_Cross.Country","2":"5.953941e+21","3":"1.128355e+15","4":"5.276655e+06","5":"0.000000e+00"},{"1":"category_2_Cyclocross","2":"4.580744e+10","3":"5.800823e+05","4":"7.896715e+04","5":"0.000000e+00"},{"1":"category_2_Dirt.Jump","2":"-2.049875e+07","3":"2.111120e+05","4":"-9.709893e+01","5":"0.000000e+00"},{"1":"category_2_Downhill","2":"-6.768009e+08","3":"5.162298e+04","4":"-1.311046e+04","5":"0.000000e+00"},{"1":"category_2_E.City","2":"4.674883e+07","3":"1.918274e+05","4":"2.437026e+02","5":"0.000000e+00"},{"1":"category_2_E.Fitness","2":"4.112476e+07","3":"2.089008e+05","4":"1.968626e+02","5":"0.000000e+00"},{"1":"category_2_E.Gravel","2":"5.953941e+21","3":"1.128355e+15","4":"5.276655e+06","5":"0.000000e+00"},{"1":"category_2_E.Mountain","2":"4.845305e+07","3":"1.916841e+05","4":"2.527755e+02","5":"0.000000e+00"},{"1":"category_2_E.Road","2":"5.953941e+21","3":"1.128355e+15","4":"5.276655e+06","5":"0.000000e+00"},{"1":"category_2_E.Trekking","2":"NA","3":"NA","4":"NA","5":"NA"},{"1":"category_2_Endurance","2":"1.494831e+07","3":"2.189348e+04","4":"6.827744e+02","5":"0.000000e+00"},{"1":"category_2_Enduro","2":"-1.683508e+07","3":"5.057594e+04","4":"-3.328673e+02","5":"0.000000e+00"},{"1":"category_2_Fat.Bikes","2":"3.901726e+07","3":"5.433239e+02","4":"7.181215e+04","5":"0.000000e+00"},{"1":"category_2_Race","2":"4.128702e+15","3":"2.370413e+07","4":"1.741765e+08","5":"0.000000e+00"},{"1":"category_2_Touring","2":"1.767779e+23","3":"6.671473e+15","4":"2.649758e+07","5":"0.000000e+00"},{"1":"category_2_Trail","2":"NA","3":"NA","4":"NA","5":"NA"},{"1":"category_2_Triathlon.Bike","2":"NA","3":"NA","4":"NA","5":"NA"},{"1":"category_3_Commuter","2":"-5.953945e+21","3":"1.128355e+15","4":"-5.276658e+06","5":"0.000000e+00"},{"1":"category_3_Commuter.ON","2":"-1.395304e+07","3":"3.606169e+05","4":"-3.869214e+01","5":"0.000000e+00"},{"1":"category_3_Dude","2":"NA","3":"NA","4":"NA","5":"NA"},{"1":"category_3_Endurace","2":"NA","3":"NA","4":"NA","5":"NA"},{"1":"category_3_Endurace.ON","2":"NA","3":"NA","4":"NA","5":"NA"},{"1":"category_3_Exceed","2":"-5.953941e+21","3":"1.128355e+15","4":"-5.276655e+06","5":"0.000000e+00"},{"1":"category_3_Grail","2":"NA","3":"NA","4":"NA","5":"NA"},{"1":"category_3_Grail.ON","2":"NA","3":"NA","4":"NA","5":"NA"},{"1":"category_3_Grand.Canyon","2":"5.306195e+06","3":"1.489011e+05","4":"3.563571e+01","5":"3.922964e-278"},{"1":"category_3_Grand.Canyon.ON","2":"1.571009e+07","3":"2.878671e+05","4":"5.457411e+01","5":"0.000000e+00"},{"1":"category_3_Inflite","2":"NA","3":"NA","4":"NA","5":"NA"},{"1":"category_3_Lux","2":"-5.953941e+21","3":"1.128355e+15","4":"-5.276655e+06","5":"0.000000e+00"},{"1":"category_3_Neuron","2":"7.236324e+06","3":"5.057594e+04","4":"1.430784e+02","5":"0.000000e+00"},{"1":"category_3_Neuron.ON","2":"4.782790e+06","3":"2.523708e+05","4":"1.895144e+01","5":"4.296352e-80"},{"1":"category_3_Pathlite","2":"NA","3":"NA","4":"NA","5":"NA"},{"1":"category_3_Pathlite.ON","2":"NA","3":"NA","4":"NA","5":"NA"},{"1":"category_3_Precede.ON","2":"NA","3":"NA","4":"NA","5":"NA"},{"1":"category_3_Roadlite","2":"NA","3":"NA","4":"NA","5":"NA"},{"1":"category_3_Roadlite.ON","2":"NA","3":"NA","4":"NA","5":"NA"},{"1":"category_3_Sender","2":"NA","3":"NA","4":"NA","5":"NA"},{"1":"category_3_Spectral","2":"NA","3":"NA","4":"NA","5":"NA"},{"1":"category_3_Spectral.ON","2":"NA","3":"NA","4":"NA","5":"NA"},{"1":"category_3_Speedmax","2":"NA","3":"NA","4":"NA","5":"NA"},{"1":"category_3_Stitched","2":"NA","3":"NA","4":"NA","5":"NA"},{"1":"category_3_Strive","2":"2.945442e+06","3":"2.304898e+00","4":"1.277906e+06","5":"0.000000e+00"},{"1":"category_3_Torque","2":"NA","3":"NA","4":"NA","5":"NA"},{"1":"category_3_Ultimate","2":"-4.128694e+15","3":"2.370526e+07","4":"-1.741678e+08","5":"0.000000e+00"},{"1":"gender_unisex","2":"6.148566e+06","3":"1.166100e+00","4":"5.272760e+06","5":"0.000000e+00"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1"></a>bike_pred <span class="ot">&lt;-</span> </span>
+<span id="cb22-2"><a href="#cb22-2"></a>  <span class="fu">predict</span>(bike_fit, test_data, <span class="at">type=</span><span class="st">"prob"</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb22-3"><a href="#cb22-3"></a>  <span class="fu">bind_cols</span>(test_data <span class="sc">%&gt;%</span> <span class="fu">select</span>(frame_material, category_2)) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>#&gt; Warning in predict.lm(object, newdata, se.fit, scale = 1, type = if (type == :
+#&gt; prediction from rank-deficient fit; attr(*, "non-estim") has doubtful cases</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1"></a>bike_pred <span class="sc">%&gt;%</span> </span>
+<span id="cb24-2"><a href="#cb24-2"></a>  <span class="fu">roc_curve</span>(<span class="at">truth =</span> frame_material, .pred_aluminium) <span class="sc">%&gt;%</span> </span>
+<span id="cb24-3"><a href="#cb24-3"></a>  <span class="fu">autoplot</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><a href="02_supervised_ml_files/figure-html/unnamed-chunk-1-2.png" class="lightbox" data-gallery="quarto-lightbox-gallery-2"><img src="02_supervised_ml_files/figure-html/unnamed-chunk-1-2.png" class="img-fluid figure-img" width="672"></a></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1"></a>bike_pred <span class="sc">%&gt;%</span> </span>
+<span id="cb25-2"><a href="#cb25-2"></a>  <span class="fu">roc_curve</span>(<span class="at">truth =</span> frame_material, .pred_carbon) <span class="sc">%&gt;%</span> </span>
+<span id="cb25-3"><a href="#cb25-3"></a>  <span class="fu">autoplot</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><a href="02_supervised_ml_files/figure-html/unnamed-chunk-1-3.png" class="lightbox" data-gallery="quarto-lightbox-gallery-3"><img src="02_supervised_ml_files/figure-html/unnamed-chunk-1-3.png" class="img-fluid figure-img" width="672"></a></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1"></a>bike_pred</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div data-pagedtable="false">
+  <script data-pagedtable-source="" type="application/json">
+{"columns":[{"label":[".pred_aluminium"],"name":[1],"type":["dbl"],"align":["right"]},{"label":[".pred_carbon"],"name":[2],"type":["dbl"],"align":["right"]},{"label":["frame_material"],"name":[3],"type":["fct"],"align":["left"]},{"label":["category_2"],"name":[4],"type":["chr"],"align":["left"]}],"data":[{"1":"2.220446e-16","2":"1.000000e+00","3":"carbon","4":"Race"},{"1":"2.220446e-16","2":"1.000000e+00","3":"carbon","4":"Race"},{"1":"2.220446e-16","2":"1.000000e+00","3":"aluminium","4":"Endurance"},{"1":"2.220446e-16","2":"1.000000e+00","3":"aluminium","4":"Endurance"},{"1":"2.220446e-16","2":"1.000000e+00","3":"aluminium","4":"Endurance"},{"1":"1.000000e+00","2":"2.220446e-16","3":"carbon","4":"Endurance"},{"1":"2.220446e-16","2":"1.000000e+00","3":"carbon","4":"Cyclocross"},{"1":"2.220446e-16","2":"1.000000e+00","3":"carbon","4":"Cyclocross"},{"1":"2.220446e-16","2":"1.000000e+00","3":"carbon","4":"Cyclocross"},{"1":"1.000000e+00","2":"2.220446e-16","3":"carbon","4":"Triathlon Bike"},{"1":"1.000000e+00","2":"2.220446e-16","3":"carbon","4":"Triathlon Bike"},{"1":"2.220446e-16","2":"1.000000e+00","3":"carbon","4":"Triathlon Bike"},{"1":"1.000000e+00","2":"2.220446e-16","3":"carbon","4":"Triathlon Bike"},{"1":"1.000000e+00","2":"2.220446e-16","3":"carbon","4":"Triathlon Bike"},{"1":"1.000000e+00","2":"2.220446e-16","3":"carbon","4":"Triathlon Bike"},{"1":"2.220446e-16","2":"1.000000e+00","3":"carbon","4":"Race"},{"1":"2.220446e-16","2":"1.000000e+00","3":"carbon","4":"Race"},{"1":"2.220446e-16","2":"1.000000e+00","3":"carbon","4":"Race"},{"1":"2.220446e-16","2":"1.000000e+00","3":"carbon","4":"Race"},{"1":"1.000000e+00","2":"2.220446e-16","3":"carbon","4":"Cross-Country"},{"1":"2.220446e-16","2":"1.000000e+00","3":"aluminium","4":"All-Road"},{"1":"2.220446e-16","2":"1.000000e+00","3":"carbon","4":"All-Road"},{"1":"1.000000e+00","2":"2.220446e-16","3":"aluminium","4":"Trail"},{"1":"1.000000e+00","2":"2.220446e-16","3":"aluminium","4":"E-Mountain"},{"1":"2.220446e-16","2":"1.000000e+00","3":"carbon","4":"Cross-Country"},{"1":"1.000000e+00","2":"2.220446e-16","3":"carbon","4":"Trail"},{"1":"2.220446e-16","2":"1.000000e+00","3":"carbon","4":"Trail"},{"1":"1.000000e+00","2":"2.220446e-16","3":"carbon","4":"Trail"},{"1":"2.220446e-16","2":"1.000000e+00","3":"aluminium","4":"E-Mountain"},{"1":"1.000000e+00","2":"2.220446e-16","3":"aluminium","4":"Downhill"},{"1":"1.000000e+00","2":"2.220446e-16","3":"aluminium","4":"Trail"},{"1":"1.000000e+00","2":"2.220446e-16","3":"carbon","4":"Trail"},{"1":"1.000000e+00","2":"2.220446e-16","3":"carbon","4":"Trail"},{"1":"1.000000e+00","2":"2.220446e-16","3":"carbon","4":"Trail"},{"1":"1.000000e+00","2":"2.220446e-16","3":"carbon","4":"Enduro"},{"1":"1.000000e+00","2":"2.220446e-16","3":"aluminium","4":"E-Trekking"},{"1":"1.000000e+00","2":"2.220446e-16","3":"aluminium","4":"E-Trekking"},{"1":"2.220446e-16","2":"1.000000e+00","3":"carbon","4":"E-City"},{"1":"2.220446e-16","2":"1.000000e+00","3":"aluminium","4":"City"},{"1":"2.220446e-16","2":"1.000000e+00","3":"aluminium","4":"City"},{"1":"1.000000e+00","2":"2.220446e-16","3":"aluminium","4":"Touring"},{"1":"1.000000e+00","2":"2.220446e-16","3":"aluminium","4":"Touring"},{"1":"1.000000e+00","2":"2.220446e-16","3":"aluminium","4":"Touring"},{"1":"1.000000e+00","2":"2.220446e-16","3":"aluminium","4":"City"},{"1":"2.220446e-16","2":"1.000000e+00","3":"aluminium","4":"City"},{"1":"2.220446e-16","2":"1.000000e+00","3":"carbon","4":"City"},{"1":"5.000000e-01","2":"5.000000e-01","3":"carbon","4":"City"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1"></a>roc_al <span class="ot">&lt;-</span> bike_pred <span class="sc">%&gt;%</span> </span>
+<span id="cb27-2"><a href="#cb27-2"></a>  <span class="fu">roc_auc</span>(<span class="at">truth =</span> frame_material, .pred_aluminium)</span>
+<span id="cb27-3"><a href="#cb27-3"></a>roc_al</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div data-pagedtable="false">
+  <script data-pagedtable-source="" type="application/json">
+{"columns":[{"label":[".metric"],"name":[1],"type":["chr"],"align":["left"]},{"label":[".estimator"],"name":[2],"type":["chr"],"align":["left"]},{"label":[".estimate"],"name":[3],"type":["dbl"],"align":["right"]}],"data":[{"1":"roc_auc","2":"binary","3":"0.545977"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1"></a>roc_car <span class="ot">&lt;-</span> bike_pred <span class="sc">%&gt;%</span> </span>
+<span id="cb28-2"><a href="#cb28-2"></a>  <span class="fu">roc_auc</span>(<span class="at">truth =</span> frame_material, .pred_carbon)</span>
+<span id="cb28-3"><a href="#cb28-3"></a>roc_car</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div data-pagedtable="false">
+  <script data-pagedtable-source="" type="application/json">
+{"columns":[{"label":[".metric"],"name":[1],"type":["chr"],"align":["left"]},{"label":[".estimator"],"name":[2],"type":["chr"],"align":["left"]},{"label":[".estimate"],"name":[3],"type":["dbl"],"align":["right"]}],"data":[{"1":"roc_auc","2":"binary","3":"0.454023"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1"></a><span class="co"># Evaluation</span></span>
+<span id="cb29-2"><a href="#cb29-2"></a>model_01_linear_lm_simple <span class="ot">&lt;-</span> <span class="fu">linear_reg</span>(<span class="at">mode =</span> <span class="st">"regression"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb29-3"><a href="#cb29-3"></a>  <span class="fu">set_engine</span>(<span class="st">"lm"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb29-4"><a href="#cb29-4"></a>  <span class="fu">fit</span>(price <span class="sc">~</span> category_2 <span class="sc">+</span> frame_material, <span class="at">data =</span> train_data)</span>
+<span id="cb29-5"><a href="#cb29-5"></a>model_01_linear_lm_simple</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>#&gt; # A tibble: 19 × 1
-#&gt;    category_2    
-#&gt;    &lt;chr&gt;         
-#&gt;  1 Race          
-#&gt;  2 Endurance     
-#&gt;  3 Cyclocross    
-#&gt;  4 Triathlon Bike
-#&gt;  5 Fat Bikes     
-#&gt;  6 Cross-Country 
-#&gt;  7 All-Road      
-#&gt;  8 E-Gravel      
-#&gt;  9 E-Mountain    
-#&gt; 10 Downhill      
-#&gt; 11 Dirt Jump     
-#&gt; 12 Enduro        
-#&gt; 13 E-City        
-#&gt; 14 E-Trekking    
-#&gt; 15 E-Fitness     
-#&gt; 16 Touring       
-#&gt; 17 City          
-#&gt; 18 Adventure     
-#&gt; 19 Trail</code></pre>
+<pre><code>#&gt; parsnip model object
+#&gt; 
+#&gt; 
+#&gt; Call:
+#&gt; stats::lm(formula = price ~ category_2 + frame_material, data = data)
+#&gt; 
+#&gt; Coefficients:
+#&gt;              (Intercept)        category_2All-Road            category_2City  
+#&gt;                   2329.5                    -522.7                   -1430.4  
+#&gt;  category_2Cross-Country      category_2Cyclocross       category_2Dirt Jump  
+#&gt;                    225.0                    -854.1                   -1063.9  
+#&gt;       category_2Downhill          category_2E-City       category_2E-Fitness  
+#&gt;                   2027.2                     698.8                     712.8  
+#&gt;       category_2E-Gravel      category_2E-Mountain          category_2E-Road  
+#&gt;                   1345.0                    1021.9                     589.5  
+#&gt;     category_2E-Trekking       category_2Endurance          category_2Enduro  
+#&gt;                   1097.5                    -486.6                     428.7  
+#&gt;      category_2Fat Bikes            category_2Race         category_2Touring  
+#&gt;                  -1460.0                     927.2                   -1176.5  
+#&gt;          category_2Trail  category_2Triathlon Bike      frame_materialcarbon  
+#&gt;                   -535.5                     267.0                    1514.5</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1"></a>split <span class="sc">%&gt;%</span> <span class="fu">testing</span>() <span class="sc">%&gt;%</span> <span class="fu">distinct</span>(category_2) <span class="sc">%&gt;%</span> <span class="fu">print</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1"></a>test_data <span class="ot">&lt;-</span> test_data <span class="sc">%&gt;%</span> <span class="fu">filter</span>(category_2 <span class="sc">!=</span> <span class="st">"Fat Bikes"</span>)</span>
+<span id="cb31-2"><a href="#cb31-2"></a>yards <span class="ot">&lt;-</span> model_01_linear_lm_simple</span>
+<span id="cb31-3"><a href="#cb31-3"></a>yards</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>#&gt; # A tibble: 15 × 1
-#&gt;    category_2    
-#&gt;    &lt;chr&gt;         
-#&gt;  1 Race          
-#&gt;  2 Endurance     
-#&gt;  3 E-Road        
-#&gt;  4 Cyclocross    
-#&gt;  5 Triathlon Bike
-#&gt;  6 Cross-Country 
-#&gt;  7 Adventure     
-#&gt;  8 E-Gravel      
-#&gt;  9 All-Road      
-#&gt; 10 Trail         
-#&gt; 11 E-Mountain    
-#&gt; 12 Enduro        
-#&gt; 13 E-Trekking    
-#&gt; 14 City          
-#&gt; 15 Touring</code></pre>
+<pre><code>#&gt; parsnip model object
+#&gt; 
+#&gt; 
+#&gt; Call:
+#&gt; stats::lm(formula = price ~ category_2 + frame_material, data = data)
+#&gt; 
+#&gt; Coefficients:
+#&gt;              (Intercept)        category_2All-Road            category_2City  
+#&gt;                   2329.5                    -522.7                   -1430.4  
+#&gt;  category_2Cross-Country      category_2Cyclocross       category_2Dirt Jump  
+#&gt;                    225.0                    -854.1                   -1063.9  
+#&gt;       category_2Downhill          category_2E-City       category_2E-Fitness  
+#&gt;                   2027.2                     698.8                     712.8  
+#&gt;       category_2E-Gravel      category_2E-Mountain          category_2E-Road  
+#&gt;                   1345.0                    1021.9                     589.5  
+#&gt;     category_2E-Trekking       category_2Endurance          category_2Enduro  
+#&gt;                   1097.5                    -486.6                     428.7  
+#&gt;      category_2Fat Bikes            category_2Race         category_2Touring  
+#&gt;                  -1460.0                     927.2                   -1176.5  
+#&gt;          category_2Trail  category_2Triathlon Bike      frame_materialcarbon  
+#&gt;                   -535.5                     267.0                    1514.5</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1"></a>train_tbl <span class="ot">&lt;-</span> <span class="fu">training</span>(split)</span>
-<span id="cb13-2"><a href="#cb13-2"></a>test_tbl  <span class="ot">&lt;-</span> <span class="fu">testing</span>(split)</span>
-<span id="cb13-3"><a href="#cb13-3"></a></span>
-<span id="cb13-4"><a href="#cb13-4"></a>train_tbl <span class="ot">&lt;-</span> train_tbl <span class="sc">%&gt;%</span> <span class="fu">set_names</span>(<span class="fu">str_replace_all</span>(<span class="fu">names</span>(train_tbl), <span class="st">" |-"</span>, <span class="st">"_"</span>))</span>
-<span id="cb13-5"><a href="#cb13-5"></a>test_tbl  <span class="ot">&lt;-</span> test_tbl  <span class="sc">%&gt;%</span> <span class="fu">set_names</span>(<span class="fu">str_replace_all</span>(<span class="fu">names</span>(test_tbl),  <span class="st">" |-"</span>, <span class="st">"_"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1"></a>g1 <span class="ot">&lt;-</span> bike_features_tbl <span class="sc">%&gt;%</span> </span>
+<span id="cb33-2"><a href="#cb33-2"></a>  <span class="fu">mutate</span>(<span class="at">category_2 =</span> <span class="fu">as.factor</span>(category_2) <span class="sc">%&gt;%</span> </span>
+<span id="cb33-3"><a href="#cb33-3"></a>           <span class="fu">fct_reorder</span>(price)) <span class="sc">%&gt;%</span> </span>
+<span id="cb33-4"><a href="#cb33-4"></a>  </span>
+<span id="cb33-5"><a href="#cb33-5"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(category_2, price)) <span class="sc">+</span></span>
+<span id="cb33-6"><a href="#cb33-6"></a>  <span class="fu">geom_violin</span>() <span class="sc">+</span></span>
+<span id="cb33-7"><a href="#cb33-7"></a>  <span class="fu">geom_jitter</span>(<span class="at">width =</span> <span class="fl">0.1</span>, <span class="at">alpha =</span> <span class="fl">0.5</span>, <span class="at">color =</span> <span class="st">"#FF00FF"</span>) <span class="sc">+</span></span>
+<span id="cb33-8"><a href="#cb33-8"></a>  <span class="fu">coord_flip</span>() <span class="sc">+</span></span>
+<span id="cb33-9"><a href="#cb33-9"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span> frame_material) <span class="sc">+</span></span>
+<span id="cb33-10"><a href="#cb33-10"></a>  <span class="fu">scale_y_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span><span class="fu">dollar_format</span>()) <span class="sc">+</span></span>
+<span id="cb33-11"><a href="#cb33-11"></a>  <span class="fu">labs</span>(</span>
+<span id="cb33-12"><a href="#cb33-12"></a>    <span class="at">title =</span> <span class="st">"Unit Price for Each Model"</span>,</span>
+<span id="cb33-13"><a href="#cb33-13"></a>    <span class="at">y =</span> <span class="st">""</span>, <span class="at">x =</span> <span class="st">"Category 2"</span></span>
+<span id="cb33-14"><a href="#cb33-14"></a>  )</span>
+<span id="cb33-15"><a href="#cb33-15"></a>g1</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>#&gt; Warning: Groups with fewer than two datapoints have been dropped.
+#&gt; ℹ Set `drop = FALSE` to consider such groups for position adjustment purposes.</code></pre>
 </div>
-</section>
-<section id="visualization" class="level1" data-number="3">
-<h1 data-number="3"><span class="header-section-number">3</span> Visualization</h1>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1"></a>g1 <span class="ot">&lt;-</span> bike_features_trafo_tbl <span class="sc">%&gt;%</span> </span>
-<span id="cb14-2"><a href="#cb14-2"></a>    <span class="fu">mutate</span>(<span class="at">category_2 =</span> <span class="fu">as.factor</span>(category_2) <span class="sc">%&gt;%</span> </span>
-<span id="cb14-3"><a href="#cb14-3"></a>           <span class="fu">fct_reorder</span>(price)) <span class="sc">%&gt;%</span> </span>
-<span id="cb14-4"><a href="#cb14-4"></a>    </span>
-<span id="cb14-5"><a href="#cb14-5"></a>    <span class="fu">ggplot</span>(<span class="fu">aes</span>(category_2, price)) <span class="sc">+</span></span>
-<span id="cb14-6"><a href="#cb14-6"></a>    <span class="fu">geom_violin</span>() <span class="sc">+</span></span>
-<span id="cb14-7"><a href="#cb14-7"></a>    <span class="fu">geom_jitter</span>(<span class="at">width =</span> <span class="fl">0.1</span>, <span class="at">alpha =</span> <span class="fl">0.5</span>, <span class="at">color =</span> <span class="st">"#2dc6d6"</span>) <span class="sc">+</span></span>
-<span id="cb14-8"><a href="#cb14-8"></a>    <span class="fu">coord_flip</span>() <span class="sc">+</span></span>
-<span id="cb14-9"><a href="#cb14-9"></a>    <span class="fu">facet_wrap</span>(<span class="sc">~</span> frame_material) <span class="sc">+</span></span>
-<span id="cb14-10"><a href="#cb14-10"></a>    <span class="fu">scale_y_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span><span class="fu">dollar_format</span>()) <span class="sc">+</span></span>
-<span id="cb14-11"><a href="#cb14-11"></a>    <span class="fu">labs</span>(</span>
-<span id="cb14-12"><a href="#cb14-12"></a>        <span class="at">title =</span> <span class="st">"Unit Price for Each Model"</span>,</span>
-<span id="cb14-13"><a href="#cb14-13"></a>        <span class="at">y =</span> <span class="st">""</span>, <span class="at">x =</span> <span class="st">"Category 2"</span></span>
-<span id="cb14-14"><a href="#cb14-14"></a>    )</span>
-<span id="cb14-15"><a href="#cb14-15"></a>g1</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>#&gt; Warning: Groups with fewer than two datapoints have been dropped.
+#&gt; ℹ Set `drop = FALSE` to consider such groups for position adjustment purposes.
+#&gt; Groups with fewer than two datapoints have been dropped.
+#&gt; ℹ Set `drop = FALSE` to consider such groups for position adjustment purposes.</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><a href="02_supervised_ml_files/figure-html/unnamed-chunk-1-4.png" class="lightbox" data-gallery="quarto-lightbox-gallery-4"><img src="02_supervised_ml_files/figure-html/unnamed-chunk-1-4.png" class="img-fluid figure-img" width="672"></a></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1"></a>new_race_alu <span class="ot">&lt;-</span> <span class="fu">tibble</span>(</span>
+<span id="cb36-2"><a href="#cb36-2"></a>  <span class="at">model =</span> <span class="st">"Exceed AL SL new"</span>,</span>
+<span id="cb36-3"><a href="#cb36-3"></a>  <span class="at">category_2 =</span> <span class="st">"Race"</span>,</span>
+<span id="cb36-4"><a href="#cb36-4"></a>  <span class="at">frame_material =</span> <span class="st">"aluminium"</span>,</span>
+<span id="cb36-5"><a href="#cb36-5"></a>  <span class="at">shimano_dura_ace =</span> <span class="dv">0</span>,</span>
+<span id="cb36-6"><a href="#cb36-6"></a>  <span class="at">shimano_ultegra =</span> <span class="dv">0</span>,</span>
+<span id="cb36-7"><a href="#cb36-7"></a>  <span class="at">shimano_105 =</span> <span class="dv">0</span>,</span>
+<span id="cb36-8"><a href="#cb36-8"></a>  <span class="at">shimano_tiagra =</span> <span class="dv">0</span>,</span>
+<span id="cb36-9"><a href="#cb36-9"></a>  <span class="at">Shimano_sora =</span> <span class="dv">0</span>,</span>
+<span id="cb36-10"><a href="#cb36-10"></a>  <span class="at">shimano_deore =</span> <span class="dv">0</span>,</span>
+<span id="cb36-11"><a href="#cb36-11"></a>  <span class="at">shimano_slx =</span> <span class="dv">0</span>,</span>
+<span id="cb36-12"><a href="#cb36-12"></a>  <span class="at">shimano_grx =</span> <span class="dv">0</span>,</span>
+<span id="cb36-13"><a href="#cb36-13"></a>  <span class="at">Shimano_xt =</span> <span class="dv">1</span>,</span>
+<span id="cb36-14"><a href="#cb36-14"></a>  <span class="at">Shimano_xtr =</span> <span class="dv">0</span>,</span>
+<span id="cb36-15"><a href="#cb36-15"></a>  <span class="at">Shimano_saint =</span> <span class="dv">0</span>,</span>
+<span id="cb36-16"><a href="#cb36-16"></a>  <span class="at">SRAM_red =</span> <span class="dv">0</span>,</span>
+<span id="cb36-17"><a href="#cb36-17"></a>  <span class="at">SRAM_force =</span> <span class="dv">0</span>,</span>
+<span id="cb36-18"><a href="#cb36-18"></a>  <span class="at">SRAM_rival =</span> <span class="dv">0</span>,</span>
+<span id="cb36-19"><a href="#cb36-19"></a>  <span class="at">SRAM_apex =</span> <span class="dv">0</span>,</span>
+<span id="cb36-20"><a href="#cb36-20"></a>  <span class="at">SRAM_xx1 =</span> <span class="dv">0</span>,</span>
+<span id="cb36-21"><a href="#cb36-21"></a>  <span class="at">SRAM_x01 =</span> <span class="dv">0</span>,</span>
+<span id="cb36-22"><a href="#cb36-22"></a>  <span class="at">SRAM_gx =</span> <span class="dv">0</span>,</span>
+<span id="cb36-23"><a href="#cb36-23"></a>  <span class="at">SRAM_nx =</span> <span class="dv">0</span>,</span>
+<span id="cb36-24"><a href="#cb36-24"></a>  <span class="at">SRAM_sx =</span> <span class="dv">0</span>,</span>
+<span id="cb36-25"><a href="#cb36-25"></a>  <span class="at">Campagnolo_potenza =</span> <span class="dv">0</span>,</span>
+<span id="cb36-26"><a href="#cb36-26"></a>  <span class="at">Campagnolo_super_record =</span> <span class="dv">0</span>,</span>
+<span id="cb36-27"><a href="#cb36-27"></a>  <span class="at">shimano_nexus =</span> <span class="dv">0</span>,</span>
+<span id="cb36-28"><a href="#cb36-28"></a>  <span class="at">shimano_alfine =</span> <span class="dv">0</span></span>
+<span id="cb36-29"><a href="#cb36-29"></a>) </span>
+<span id="cb36-30"><a href="#cb36-30"></a>new_race_alu</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div data-pagedtable="false">
+  <script data-pagedtable-source="" type="application/json">
+{"columns":[{"label":["model"],"name":[1],"type":["chr"],"align":["left"]},{"label":["category_2"],"name":[2],"type":["chr"],"align":["left"]},{"label":["frame_material"],"name":[3],"type":["chr"],"align":["left"]},{"label":["shimano_dura_ace"],"name":[4],"type":["dbl"],"align":["right"]},{"label":["shimano_ultegra"],"name":[5],"type":["dbl"],"align":["right"]},{"label":["shimano_105"],"name":[6],"type":["dbl"],"align":["right"]},{"label":["shimano_tiagra"],"name":[7],"type":["dbl"],"align":["right"]},{"label":["Shimano_sora"],"name":[8],"type":["dbl"],"align":["right"]},{"label":["shimano_deore"],"name":[9],"type":["dbl"],"align":["right"]},{"label":["shimano_slx"],"name":[10],"type":["dbl"],"align":["right"]},{"label":["shimano_grx"],"name":[11],"type":["dbl"],"align":["right"]},{"label":["Shimano_xt"],"name":[12],"type":["dbl"],"align":["right"]},{"label":["Shimano_xtr"],"name":[13],"type":["dbl"],"align":["right"]},{"label":["Shimano_saint"],"name":[14],"type":["dbl"],"align":["right"]},{"label":["SRAM_red"],"name":[15],"type":["dbl"],"align":["right"]},{"label":["SRAM_force"],"name":[16],"type":["dbl"],"align":["right"]},{"label":["SRAM_rival"],"name":[17],"type":["dbl"],"align":["right"]},{"label":["SRAM_apex"],"name":[18],"type":["dbl"],"align":["right"]},{"label":["SRAM_xx1"],"name":[19],"type":["dbl"],"align":["right"]},{"label":["SRAM_x01"],"name":[20],"type":["dbl"],"align":["right"]},{"label":["SRAM_gx"],"name":[21],"type":["dbl"],"align":["right"]},{"label":["SRAM_nx"],"name":[22],"type":["dbl"],"align":["right"]},{"label":["SRAM_sx"],"name":[23],"type":["dbl"],"align":["right"]},{"label":["Campagnolo_potenza"],"name":[24],"type":["dbl"],"align":["right"]},{"label":["Campagnolo_super_record"],"name":[25],"type":["dbl"],"align":["right"]},{"label":["shimano_nexus"],"name":[26],"type":["dbl"],"align":["right"]},{"label":["shimano_alfine"],"name":[27],"type":["dbl"],"align":["right"]}],"data":[{"1":"Exceed AL SL new","2":"Race","3":"aluminium","4":"0","5":"0","6":"0","7":"0","8":"0","9":"0","10":"0","11":"0","12":"1","13":"0","14":"0","15":"0","16":"0","17":"0","18":"0","19":"0","20":"0","21":"0","22":"0","23":"0","24":"0","25":"0","26":"0","27":"0"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1"></a><span class="fu">predict</span>(model_01_linear_lm_simple, <span class="at">new_data =</span> new_race_alu)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div data-pagedtable="false">
+  <script data-pagedtable-source="" type="application/json">
+{"columns":[{"label":[".pred"],"name":[1],"type":["dbl"],"align":["right"]}],"data":[{"1":"3256.746"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1"></a>models_tbl <span class="ot">&lt;-</span> <span class="fu">tibble</span>(</span>
+<span id="cb38-2"><a href="#cb38-2"></a>  <span class="at">model_id =</span> <span class="fu">str_c</span>(<span class="st">"Model 0"</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">1</span>),</span>
+<span id="cb38-3"><a href="#cb38-3"></a>  <span class="at">model =</span> <span class="fu">list</span>(</span>
+<span id="cb38-4"><a href="#cb38-4"></a>    model_01_linear_lm_simple</span>
+<span id="cb38-5"><a href="#cb38-5"></a>  )</span>
+<span id="cb38-6"><a href="#cb38-6"></a>)</span>
+<span id="cb38-7"><a href="#cb38-7"></a>models_tbl</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div data-pagedtable="false">
+  <script data-pagedtable-source="" type="application/json">
+{"columns":[{"label":["model_id"],"name":[1],"type":["chr"],"align":["left"]},{"label":["model"],"name":[2],"type":["list"],"align":["right"]}],"data":[{"1":"Model 01","2":"<S3: _lm>"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1"></a>predictions_new_race_alu_tbl <span class="ot">&lt;-</span> models_tbl <span class="sc">%&gt;%</span></span>
+<span id="cb39-2"><a href="#cb39-2"></a>  <span class="fu">mutate</span>(<span class="at">predictions =</span> <span class="fu">map</span>(model, predict, <span class="at">new_data =</span> new_race_alu)) <span class="sc">%&gt;%</span></span>
+<span id="cb39-3"><a href="#cb39-3"></a>  <span class="fu">unnest</span>(predictions) <span class="sc">%&gt;%</span></span>
+<span id="cb39-4"><a href="#cb39-4"></a>  <span class="fu">mutate</span>(<span class="at">category_2 =</span> <span class="st">"Race"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb39-5"><a href="#cb39-5"></a>  <span class="fu">left_join</span>(new_race_alu, <span class="at">by =</span> <span class="st">"category_2"</span>)</span>
+<span id="cb39-6"><a href="#cb39-6"></a>predictions_new_race_alu_tbl</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div data-pagedtable="false">
+  <script data-pagedtable-source="" type="application/json">
+{"columns":[{"label":["model_id"],"name":[1],"type":["chr"],"align":["left"]},{"label":["model.x"],"name":[2],"type":["list"],"align":["right"]},{"label":[".pred"],"name":[3],"type":["dbl"],"align":["right"]},{"label":["category_2"],"name":[4],"type":["chr"],"align":["left"]},{"label":["model.y"],"name":[5],"type":["chr"],"align":["left"]},{"label":["frame_material"],"name":[6],"type":["chr"],"align":["left"]},{"label":["shimano_dura_ace"],"name":[7],"type":["dbl"],"align":["right"]},{"label":["shimano_ultegra"],"name":[8],"type":["dbl"],"align":["right"]},{"label":["shimano_105"],"name":[9],"type":["dbl"],"align":["right"]},{"label":["shimano_tiagra"],"name":[10],"type":["dbl"],"align":["right"]},{"label":["Shimano_sora"],"name":[11],"type":["dbl"],"align":["right"]},{"label":["shimano_deore"],"name":[12],"type":["dbl"],"align":["right"]},{"label":["shimano_slx"],"name":[13],"type":["dbl"],"align":["right"]},{"label":["shimano_grx"],"name":[14],"type":["dbl"],"align":["right"]},{"label":["Shimano_xt"],"name":[15],"type":["dbl"],"align":["right"]},{"label":["Shimano_xtr"],"name":[16],"type":["dbl"],"align":["right"]},{"label":["Shimano_saint"],"name":[17],"type":["dbl"],"align":["right"]},{"label":["SRAM_red"],"name":[18],"type":["dbl"],"align":["right"]},{"label":["SRAM_force"],"name":[19],"type":["dbl"],"align":["right"]},{"label":["SRAM_rival"],"name":[20],"type":["dbl"],"align":["right"]},{"label":["SRAM_apex"],"name":[21],"type":["dbl"],"align":["right"]},{"label":["SRAM_xx1"],"name":[22],"type":["dbl"],"align":["right"]},{"label":["SRAM_x01"],"name":[23],"type":["dbl"],"align":["right"]},{"label":["SRAM_gx"],"name":[24],"type":["dbl"],"align":["right"]},{"label":["SRAM_nx"],"name":[25],"type":["dbl"],"align":["right"]},{"label":["SRAM_sx"],"name":[26],"type":["dbl"],"align":["right"]},{"label":["Campagnolo_potenza"],"name":[27],"type":["dbl"],"align":["right"]},{"label":["Campagnolo_super_record"],"name":[28],"type":["dbl"],"align":["right"]},{"label":["shimano_nexus"],"name":[29],"type":["dbl"],"align":["right"]},{"label":["shimano_alfine"],"name":[30],"type":["dbl"],"align":["right"]}],"data":[{"1":"Model 01","2":"<S3: _lm>","3":"3256.746","4":"Race","5":"Exceed AL SL new","6":"aluminium","7":"0","8":"0","9":"0","10":"0","11":"0","12":"0","13":"0","14":"0","15":"1","16":"0","17":"0","18":"0","19":"0","20":"0","21":"0","22":"0","23":"0","24":"0","25":"0","26":"0","27":"0","28":"0","29":"0","30":"0"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1"></a>g2 <span class="ot">&lt;-</span> g1 <span class="sc">+</span></span>
+<span id="cb40-2"><a href="#cb40-2"></a>  <span class="fu">geom_point</span>(<span class="fu">aes</span>(<span class="at">y =</span> .pred), <span class="at">color =</span> <span class="st">"red"</span>, <span class="at">alpha =</span> <span class="fl">0.5</span>,</span>
+<span id="cb40-3"><a href="#cb40-3"></a>             <span class="at">data =</span> predictions_new_race_alu_tbl) <span class="sc">+</span></span>
+<span id="cb40-4"><a href="#cb40-4"></a>  ggrepel<span class="sc">::</span><span class="fu">geom_text_repel</span>(<span class="fu">aes</span>(<span class="at">label =</span> model_id, <span class="at">y =</span> .pred),</span>
+<span id="cb40-5"><a href="#cb40-5"></a>                           <span class="at">size =</span> <span class="dv">3</span>,</span>
+<span id="cb40-6"><a href="#cb40-6"></a>                           <span class="at">data =</span> predictions_new_race_alu_tbl)</span>
+<span id="cb40-7"><a href="#cb40-7"></a>g2</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>#&gt; Warning: Groups with fewer than two datapoints have been dropped.
 #&gt; ℹ Set `drop = FALSE` to consider such groups for position adjustment purposes.
@@ -408,14 +718,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><a href="02_supervised_ml_files/figure-html/unnamed-chunk-6-1.png" class="lightbox" data-gallery="quarto-lightbox-gallery-1"><img src="02_supervised_ml_files/figure-html/unnamed-chunk-6-1.png" class="img-fluid figure-img" width="672"></a></p>
+<p><a href="02_supervised_ml_files/figure-html/unnamed-chunk-1-5.png" class="lightbox" data-gallery="quarto-lightbox-gallery-5"><img src="02_supervised_ml_files/figure-html/unnamed-chunk-1-5.png" class="img-fluid figure-img" width="672"></a></p>
 </figure>
 </div>
 </div>
 </div>
 
 
-</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
@@ -983,7 +1292,7 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 });
 </script>
 </div> <!-- /content -->
-<script>var lightboxQuarto = GLightbox({"selector":".lightbox","loop":false,"openEffect":"zoom","descPosition":"bottom","closeEffect":"zoom"});
+<script>var lightboxQuarto = GLightbox({"selector":".lightbox","openEffect":"zoom","descPosition":"bottom","closeEffect":"zoom","loop":false});
 (function() {
   let previousOnload = window.onload;
   window.onload = () => {
