@@ -6,9 +6,10 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="author" content="Joschka Schwarz">
+<meta name="author" content="Rishon Noel Saldanha">
+<meta name="dcterms.date" content="2024-06-06">
 
-<title>MyLabJournal – Data Wrangling</title>
+<title>MyLabJournal – 03 Automated Machine Learning with H20</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -20,6 +21,40 @@ ul.task-list li input[type="checkbox"] {
   width: 0.8em;
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
 </style>
 
@@ -43,6 +78,9 @@ ul.task-list li input[type="checkbox"] {
 <link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
 <link href="../../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
 <link href="../../site_libs/bootstrap/bootstrap-dark.min.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<script src="../../site_libs/quarto-contrib/glightbox/glightbox.min.js"></script>
+<link href="../../site_libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
+<link href="../../site_libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -70,6 +108,10 @@ ul.task-list li input[type="checkbox"] {
     "search-label": "Search"
   }
 }</script>
+<link href="../../site_libs/pagedtable-1.1/css/pagedtable.css" rel="stylesheet">
+
+<script src="../../site_libs/pagedtable-1.1/js/pagedtable.js"></script>
+
 
 
 </head>
@@ -146,15 +188,26 @@ ul.task-list li input[type="checkbox"] {
 <div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
 <!-- sidebar -->
 <!-- margin-sidebar -->
-    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
-        
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Contents</h2>
+   
+  <ul class="collapse">
+  <li><a href="#libraries" id="toc-libraries" class="nav-link active" data-scroll-target="#libraries"><span class="header-section-number">1</span> Libraries</a></li>
+  <li><a href="#load-data-definitions" id="toc-load-data-definitions" class="nav-link" data-scroll-target="#load-data-definitions"><span class="header-section-number">2</span> Load Data Definitions</a></li>
+  <li><a href="#load-employee-attrition" id="toc-load-employee-attrition" class="nav-link" data-scroll-target="#load-employee-attrition"><span class="header-section-number">3</span> Load Employee Attrition</a></li>
+  <li><a href="#create-visualization-method" id="toc-create-visualization-method" class="nav-link" data-scroll-target="#create-visualization-method"><span class="header-section-number">4</span> Create Visualization Method</a></li>
+  <li><a href="#visualize-feature-groups" id="toc-visualize-feature-groups" class="nav-link" data-scroll-target="#visualize-feature-groups"><span class="header-section-number">5</span> Visualize Feature Groups</a></li>
+  <li><a href="#challenge-solutions" id="toc-challenge-solutions" class="nav-link" data-scroll-target="#challenge-solutions"><span class="header-section-number">6</span> Challenge Solutions</a></li>
+  </ul>
+</nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Data Wrangling</h1>
+<h1 class="title">03 Automated Machine Learning with H20</h1>
 </div>
 
 
@@ -164,10 +217,16 @@ ul.task-list li input[type="checkbox"] {
     <div>
     <div class="quarto-title-meta-heading">Author</div>
     <div class="quarto-title-meta-contents">
-             <p>Joschka Schwarz </p>
+             <p>Rishon Noel Saldanha </p>
           </div>
   </div>
     
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">June 6, 2024</p>
+    </div>
+  </div>
   
     
   </div>
@@ -177,21 +236,303 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<div class="callout callout-style-default callout-note callout-titled">
-<div class="callout-header d-flex align-content-center">
-<div class="callout-icon-container">
-<i class="callout-icon"></i>
+<p>Load the absolute path to the data directory.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a>data_dir <span class="ot">&lt;-</span> params<span class="sc">$</span>data_dir</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div class="callout-title-container flex-fill">
-Note
+<section id="libraries" class="level1" data-number="1">
+<h1 data-number="1"><span class="header-section-number">1</span> Libraries</h1>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1"></a><span class="fu">library</span>(tidyverse)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>#&gt; ── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
+#&gt; ✔ dplyr     1.1.4     ✔ readr     2.1.5
+#&gt; ✔ forcats   1.0.0     ✔ stringr   1.5.1
+#&gt; ✔ ggplot2   3.5.1     ✔ tibble    3.2.1
+#&gt; ✔ lubridate 1.9.3     ✔ tidyr     1.3.1
+#&gt; ✔ purrr     1.0.2     
+#&gt; ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+#&gt; ✖ dplyr::filter() masks stats::filter()
+#&gt; ✖ dplyr::lag()    masks stats::lag()
+#&gt; ℹ Use the conflicted package (&lt;http://conflicted.r-lib.org/&gt;) to force all conflicts to become errors</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1"></a><span class="fu">library</span>(readxl)</span>
+<span id="cb4-2"><a href="#cb4-2"></a><span class="fu">library</span>(skimr)</span>
+<span id="cb4-3"><a href="#cb4-3"></a><span class="fu">library</span>(GGally)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>#&gt; Registered S3 method overwritten by 'GGally':
+#&gt;   method from   
+#&gt;   +.gg   ggplot2</code></pre>
 </div>
 </div>
-<div class="callout-body-container callout-body">
-<p>You can delete everything in here and start fresh.</p>
+</section>
+<section id="load-data-definitions" class="level1" data-number="2">
+<h1 data-number="2"><span class="header-section-number">2</span> Load Data Definitions</h1>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1"></a>definitions_raw_tbl   <span class="ot">&lt;-</span> <span class="fu">read_excel</span>(<span class="fu">file.path</span>(<span class="st">"C:/Users/risho/OneDrive/Desktop/internship_sparks/ss24-bdml-rishon1234/ML/data/Business Decisions with Machine Learning/data_definitions.xlsx"</span>), <span class="at">sheet =</span> <span class="dv">1</span>, <span class="at">col_names =</span> <span class="cn">FALSE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>#&gt; New names:
+#&gt; • `` -&gt; `...1`
+#&gt; • `` -&gt; `...2`</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1"></a>definitions_raw_tbl <span class="sc">|&gt;</span> <span class="fu">as_tibble</span>() <span class="sc">|&gt;</span> <span class="fu">print</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt; # A tibble: 35 × 2
+#&gt;    ...1                    ...2             
+#&gt;    &lt;chr&gt;                   &lt;chr&gt;            
+#&gt;  1 Education               1 'Below College'
+#&gt;  2 &lt;NA&gt;                    2 'College'      
+#&gt;  3 &lt;NA&gt;                    3 'Bachelor'     
+#&gt;  4 &lt;NA&gt;                    4 'Master'       
+#&gt;  5 &lt;NA&gt;                    5 'Doctor'       
+#&gt;  6 &lt;NA&gt;                    &lt;NA&gt;             
+#&gt;  7 EnvironmentSatisfaction 1 'Low'          
+#&gt;  8 &lt;NA&gt;                    2 'Medium'       
+#&gt;  9 &lt;NA&gt;                    3 'High'         
+#&gt; 10 &lt;NA&gt;                    4 'Very High'    
+#&gt; # ℹ 25 more rows</code></pre>
 </div>
 </div>
+</section>
+<section id="load-employee-attrition" class="level1" data-number="3">
+<h1 data-number="3"><span class="header-section-number">3</span> Load Employee Attrition</h1>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1"></a>employee_attrition_tbl <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">"C:/Users/risho/OneDrive/Desktop/internship_sparks/ss24-bdml-rishon1234/ML/data/Business Decisions with Machine Learning/datasets-1067-1925-WA_Fn-UseC_-HR-Employee-Attrition.csv"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>#&gt; Rows: 1470 Columns: 35
+#&gt; ── Column specification ────────────────────────────────────────────────────────
+#&gt; Delimiter: ","
+#&gt; chr  (9): Attrition, BusinessTravel, Department, EducationField, Gender, Job...
+#&gt; dbl (26): Age, DailyRate, DistanceFromHome, Education, EmployeeCount, Employ...
+#&gt; 
+#&gt; ℹ Use `spec()` to retrieve the full column specification for this data.
+#&gt; ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1"></a>employee_attrition_tbl <span class="sc">|&gt;</span> <span class="fu">as_tibble</span>() <span class="sc">|&gt;</span> <span class="fu">print</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt; # A tibble: 1,470 × 35
+#&gt;      Age Attrition BusinessTravel    DailyRate Department       DistanceFromHome
+#&gt;    &lt;dbl&gt; &lt;chr&gt;     &lt;chr&gt;                 &lt;dbl&gt; &lt;chr&gt;                       &lt;dbl&gt;
+#&gt;  1    41 Yes       Travel_Rarely          1102 Sales                           1
+#&gt;  2    49 No        Travel_Frequently       279 Research &amp; Deve…                8
+#&gt;  3    37 Yes       Travel_Rarely          1373 Research &amp; Deve…                2
+#&gt;  4    33 No        Travel_Frequently      1392 Research &amp; Deve…                3
+#&gt;  5    27 No        Travel_Rarely           591 Research &amp; Deve…                2
+#&gt;  6    32 No        Travel_Frequently      1005 Research &amp; Deve…                2
+#&gt;  7    59 No        Travel_Rarely          1324 Research &amp; Deve…                3
+#&gt;  8    30 No        Travel_Rarely          1358 Research &amp; Deve…               24
+#&gt;  9    38 No        Travel_Frequently       216 Research &amp; Deve…               23
+#&gt; 10    36 No        Travel_Rarely          1299 Research &amp; Deve…               27
+#&gt; # ℹ 1,460 more rows
+#&gt; # ℹ 29 more variables: Education &lt;dbl&gt;, EducationField &lt;chr&gt;,
+#&gt; #   EmployeeCount &lt;dbl&gt;, EmployeeNumber &lt;dbl&gt;, EnvironmentSatisfaction &lt;dbl&gt;,
+#&gt; #   Gender &lt;chr&gt;, HourlyRate &lt;dbl&gt;, JobInvolvement &lt;dbl&gt;, JobLevel &lt;dbl&gt;,
+#&gt; #   JobRole &lt;chr&gt;, JobSatisfaction &lt;dbl&gt;, MaritalStatus &lt;chr&gt;,
+#&gt; #   MonthlyIncome &lt;dbl&gt;, MonthlyRate &lt;dbl&gt;, NumCompaniesWorked &lt;dbl&gt;,
+#&gt; #   Over18 &lt;chr&gt;, OverTime &lt;chr&gt;, PercentSalaryHike &lt;dbl&gt;, …</code></pre>
+</div>
+</div>
+</section>
+<section id="create-visualization-method" class="level1" data-number="4">
+<h1 data-number="4"><span class="header-section-number">4</span> Create Visualization Method</h1>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1"></a>plot_ggpairs <span class="ot">&lt;-</span> <span class="cf">function</span>(data, <span class="at">color =</span> <span class="cn">NULL</span>, <span class="at">density_alpha =</span> <span class="fl">0.5</span>) {</span>
+<span id="cb14-2"><a href="#cb14-2"></a>    </span>
+<span id="cb14-3"><a href="#cb14-3"></a>    color_expr <span class="ot">&lt;-</span> <span class="fu">enquo</span>(color)</span>
+<span id="cb14-4"><a href="#cb14-4"></a>    </span>
+<span id="cb14-5"><a href="#cb14-5"></a>    <span class="cf">if</span> (rlang<span class="sc">::</span><span class="fu">quo_is_null</span>(color_expr)) {</span>
+<span id="cb14-6"><a href="#cb14-6"></a>        </span>
+<span id="cb14-7"><a href="#cb14-7"></a>        g <span class="ot">&lt;-</span> data <span class="sc">%&gt;%</span></span>
+<span id="cb14-8"><a href="#cb14-8"></a>            <span class="fu">ggpairs</span>(<span class="at">lower =</span> <span class="st">"blank"</span>) </span>
+<span id="cb14-9"><a href="#cb14-9"></a>        </span>
+<span id="cb14-10"><a href="#cb14-10"></a>    } <span class="cf">else</span> {</span>
+<span id="cb14-11"><a href="#cb14-11"></a>        </span>
+<span id="cb14-12"><a href="#cb14-12"></a>        color_name <span class="ot">&lt;-</span> <span class="fu">quo_name</span>(color_expr)</span>
+<span id="cb14-13"><a href="#cb14-13"></a>        </span>
+<span id="cb14-14"><a href="#cb14-14"></a>        g <span class="ot">&lt;-</span> data <span class="sc">%&gt;%</span></span>
+<span id="cb14-15"><a href="#cb14-15"></a>            <span class="fu">ggpairs</span>(<span class="at">mapping =</span> <span class="fu">aes_string</span>(<span class="at">color =</span> color_name), </span>
+<span id="cb14-16"><a href="#cb14-16"></a>                    <span class="at">lower =</span> <span class="st">"blank"</span>, <span class="at">legend =</span> <span class="dv">1</span>,</span>
+<span id="cb14-17"><a href="#cb14-17"></a>                    <span class="at">diag =</span> <span class="fu">list</span>(<span class="at">continuous =</span> <span class="fu">wrap</span>(<span class="st">"densityDiag"</span>, </span>
+<span id="cb14-18"><a href="#cb14-18"></a>                                                  <span class="at">alpha =</span> density_alpha))) <span class="sc">+</span></span>
+<span id="cb14-19"><a href="#cb14-19"></a>            <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"bottom"</span>)</span>
+<span id="cb14-20"><a href="#cb14-20"></a>    }</span>
+<span id="cb14-21"><a href="#cb14-21"></a>    </span>
+<span id="cb14-22"><a href="#cb14-22"></a>    <span class="fu">return</span>(g)</span>
+<span id="cb14-23"><a href="#cb14-23"></a>    </span>
+<span id="cb14-24"><a href="#cb14-24"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="visualize-feature-groups" class="level1" data-number="5">
+<h1 data-number="5"><span class="header-section-number">5</span> Visualize Feature Groups</h1>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1"></a><span class="co"># Descriptive Features</span></span>
+<span id="cb15-2"><a href="#cb15-2"></a>employee_attrition_tbl <span class="sc">%&gt;%</span> </span>
+<span id="cb15-3"><a href="#cb15-3"></a>  <span class="fu">select</span>(Attrition, Age, DistanceFromHome, Gender, MaritalStatus, NumCompaniesWorked, Over18) <span class="sc">%&gt;%</span></span>
+<span id="cb15-4"><a href="#cb15-4"></a>  <span class="fu">plot_ggpairs</span>(Attrition)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>#&gt; Warning: `aes_string()` was deprecated in ggplot2 3.0.0.
+#&gt; ℹ Please use tidy evaluation idioms with `aes()`.
+#&gt; ℹ See also `vignette("ggplot2-in-packages")` for more information.</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><a href="03_Automated_ML_with_H2o_files/figure-html/unnamed-chunk-6-1.png" class="lightbox" data-gallery="quarto-lightbox-gallery-1"><img src="03_Automated_ML_with_H2o_files/figure-html/unnamed-chunk-6-1.png" class="img-fluid figure-img" width="960"></a></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1"></a><span class="co"># Employment Features</span></span>
+<span id="cb17-2"><a href="#cb17-2"></a>employee_attrition_tbl <span class="sc">%&gt;%</span> </span>
+<span id="cb17-3"><a href="#cb17-3"></a>  <span class="fu">select</span>(Attrition, Department, EmployeeCount, EmployeeNumber, JobInvolvement, JobLevel, JobRole, JobSatisfaction) <span class="sc">%&gt;%</span></span>
+<span id="cb17-4"><a href="#cb17-4"></a>  <span class="fu">plot_ggpairs</span>(Attrition)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>#&gt; Warning in cor(x, y): the standard deviation is zero</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>#&gt; Warning in cor(x, y): the standard deviation is zero
+#&gt; Warning in cor(x, y): the standard deviation is zero
+#&gt; Warning in cor(x, y): the standard deviation is zero
+#&gt; Warning in cor(x, y): the standard deviation is zero
+#&gt; Warning in cor(x, y): the standard deviation is zero
+#&gt; Warning in cor(x, y): the standard deviation is zero
+#&gt; Warning in cor(x, y): the standard deviation is zero
+#&gt; Warning in cor(x, y): the standard deviation is zero
+#&gt; Warning in cor(x, y): the standard deviation is zero
+#&gt; Warning in cor(x, y): the standard deviation is zero
+#&gt; Warning in cor(x, y): the standard deviation is zero</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><a href="03_Automated_ML_with_H2o_files/figure-html/unnamed-chunk-6-2.png" class="lightbox" data-gallery="quarto-lightbox-gallery-2"><img src="03_Automated_ML_with_H2o_files/figure-html/unnamed-chunk-6-2.png" class="img-fluid figure-img" width="960"></a></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1"></a><span class="co"># Compensation Features</span></span>
+<span id="cb20-2"><a href="#cb20-2"></a>employee_attrition_tbl <span class="sc">%&gt;%</span> </span>
+<span id="cb20-3"><a href="#cb20-3"></a>  <span class="fu">select</span>(Attrition, MonthlyIncome, PercentSalaryHike, StockOptionLevel) <span class="sc">%&gt;%</span></span>
+<span id="cb20-4"><a href="#cb20-4"></a>  <span class="fu">plot_ggpairs</span>(Attrition)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><a href="03_Automated_ML_with_H2o_files/figure-html/unnamed-chunk-6-3.png" class="lightbox" data-gallery="quarto-lightbox-gallery-3"><img src="03_Automated_ML_with_H2o_files/figure-html/unnamed-chunk-6-3.png" class="img-fluid figure-img" width="960"></a></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1"></a><span class="co"># Survery Results</span></span>
+<span id="cb21-2"><a href="#cb21-2"></a>employee_attrition_tbl <span class="sc">%&gt;%</span> </span>
+<span id="cb21-3"><a href="#cb21-3"></a>  <span class="fu">select</span>(Attrition, EnvironmentSatisfaction, JobSatisfaction, RelationshipSatisfaction, WorkLifeBalance) <span class="sc">%&gt;%</span></span>
+<span id="cb21-4"><a href="#cb21-4"></a>  <span class="fu">plot_ggpairs</span>(Attrition)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><a href="03_Automated_ML_with_H2o_files/figure-html/unnamed-chunk-6-4.png" class="lightbox" data-gallery="quarto-lightbox-gallery-4"><img src="03_Automated_ML_with_H2o_files/figure-html/unnamed-chunk-6-4.png" class="img-fluid figure-img" width="960"></a></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1"></a><span class="co"># Performance Data</span></span>
+<span id="cb22-2"><a href="#cb22-2"></a>employee_attrition_tbl <span class="sc">%&gt;%</span> </span>
+<span id="cb22-3"><a href="#cb22-3"></a>  <span class="fu">select</span>(Attrition, JobInvolvement, PerformanceRating) <span class="sc">%&gt;%</span></span>
+<span id="cb22-4"><a href="#cb22-4"></a>  <span class="fu">plot_ggpairs</span>(Attrition)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><a href="03_Automated_ML_with_H2o_files/figure-html/unnamed-chunk-6-5.png" class="lightbox" data-gallery="quarto-lightbox-gallery-5"><img src="03_Automated_ML_with_H2o_files/figure-html/unnamed-chunk-6-5.png" class="img-fluid figure-img" width="960"></a></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1"></a><span class="co"># Work-Life Features</span></span>
+<span id="cb23-2"><a href="#cb23-2"></a>employee_attrition_tbl <span class="sc">%&gt;%</span> </span>
+<span id="cb23-3"><a href="#cb23-3"></a>  <span class="fu">select</span>(Attrition, BusinessTravel, OverTime) <span class="sc">%&gt;%</span></span>
+<span id="cb23-4"><a href="#cb23-4"></a>    <span class="fu">plot_ggpairs</span>(Attrition)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><a href="03_Automated_ML_with_H2o_files/figure-html/unnamed-chunk-6-6.png" class="lightbox" data-gallery="quarto-lightbox-gallery-6"><img src="03_Automated_ML_with_H2o_files/figure-html/unnamed-chunk-6-6.png" class="img-fluid figure-img" width="960"></a></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1"></a><span class="co"># Training &amp; Education</span></span>
+<span id="cb24-2"><a href="#cb24-2"></a>employee_attrition_tbl <span class="sc">%&gt;%</span> </span>
+<span id="cb24-3"><a href="#cb24-3"></a>  <span class="fu">select</span>(Attrition, Education, EducationField, TrainingTimesLastYear) <span class="sc">%&gt;%</span></span>
+<span id="cb24-4"><a href="#cb24-4"></a>  <span class="fu">plot_ggpairs</span>(Attrition)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><a href="03_Automated_ML_with_H2o_files/figure-html/unnamed-chunk-6-7.png" class="lightbox" data-gallery="quarto-lightbox-gallery-7"><img src="03_Automated_ML_with_H2o_files/figure-html/unnamed-chunk-6-7.png" class="img-fluid figure-img" width="960"></a></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1"></a><span class="co"># Time-Based Features</span></span>
+<span id="cb25-2"><a href="#cb25-2"></a>employee_attrition_tbl <span class="sc">%&gt;%</span> </span>
+<span id="cb25-3"><a href="#cb25-3"></a>  <span class="fu">select</span>(Attrition, TotalWorkingYears, YearsAtCompany, YearsInCurrentRole, YearsSinceLastPromotion, YearsWithCurrManager) <span class="sc">%&gt;%</span></span>
+<span id="cb25-4"><a href="#cb25-4"></a>    <span class="fu">plot_ggpairs</span>(Attrition)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><a href="03_Automated_ML_with_H2o_files/figure-html/unnamed-chunk-6-8.png" class="lightbox" data-gallery="quarto-lightbox-gallery-8"><img src="03_Automated_ML_with_H2o_files/figure-html/unnamed-chunk-6-8.png" class="img-fluid figure-img" width="960"></a></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="challenge-solutions" class="level1" data-number="6">
+<h1 data-number="6"><span class="header-section-number">6</span> Challenge Solutions</h1>
+<p>The challenge question are solved based on the graphs plotted above for the feature groups.</p>
+<section id="compensation-features" class="level3">
+<h3 class="anchored" data-anchor-id="compensation-features"><em>1. Compensation Features</em></h3>
+<p>What can you deduce about the interaction between Monthly Income and Attrition?<br>
+<strong>Solution:</strong> c.&nbsp;Those that are leaving have a lower Monthly Income.</p>
+</section>
+<section id="compensation-features-1" class="level3">
+<h3 class="anchored" data-anchor-id="compensation-features-1"><em>2. Compensation Features</em></h3>
+<p>What can you deduce about the interaction between Percent Salary Hike and Attrition?<br>
+<strong>Solution:</strong> c.&nbsp;Those that are leaving have lower Percent Salary Hike<br>
+<strong>Note:</strong> However, it must be noted this distinction is not super clear as for both attrition options “yes” and “no” the mean percent salary hike is the same. Only the max value of the percent salary hike is bigger for “yes”. That’s why I decide for c).</p>
+</section>
+<section id="compensation-features-2" class="level3">
+<h3 class="anchored" data-anchor-id="compensation-features-2"><em>3. Compensation Features</em></h3>
+<p>What can you deduce about the interaction between Stock Option Level and Attrition?<br>
+<strong>Solution:</strong> b. Those that are staying have a higher stock option level.</p>
+</section>
+<section id="survey-results" class="level3">
+<h3 class="anchored" data-anchor-id="survey-results"><em>4. Survey Results</em></h3>
+<p>What can you deduce about the interaction between Environment Satisfaction and Attrition?<br>
+<strong>Solution:</strong> A higher proportion of those leaving have a low environment satisfaction level.</p>
+</section>
+<section id="survey-results-1" class="level3">
+<h3 class="anchored" data-anchor-id="survey-results-1"><em>5. Survey Results</em></h3>
+<p>What can you deduce about the interaction between Work Life Balance and Attrition<br>
+<strong>Solution:</strong> b. Those that are staying have a higher density of 2’s and 3’s.</p>
+</section>
+<section id="performance-data" class="level3">
+<h3 class="anchored" data-anchor-id="performance-data"><em>6. Performance Data</em></h3>
+<p>What Can you deduce about the interaction between Job Involvement and Attrition?<br>
+<strong>Solution:</strong> a. Those that are leaving have a lower density of 3’s and 4’s.</p>
+</section>
+<section id="work-life-features" class="level3">
+<h3 class="anchored" data-anchor-id="work-life-features"><em>7. Work-Life Features</em></h3>
+<p>What can you deduce about the interaction between Over Time and Attrition?<br>
+<strong>Solution:</strong> b. The proportion of those staying that are working Over Time are high compared to those that are not staying.</p>
+</section>
+<section id="training-and-education" class="level3">
+<h3 class="anchored" data-anchor-id="training-and-education"><em>8. Training and Education</em></h3>
+<p>What can you deduce about the interaction between Training Times Last Year and Attrition<br>
+<strong>Solution:</strong> b. People that leave tend to have less annual trainings.</p>
+</section>
+<section id="time-based-features" class="level3">
+<h3 class="anchored" data-anchor-id="time-based-features"><em>9. Time-Based Features</em></h3>
+<p>What can you deduce about the interaction between Years At Company and Attrition<br>
+<strong>Solution:</strong> b. People that leave tend to have less working years at the company.</p>
+</section>
+<section id="time-based-features-1" class="level3">
+<h3 class="anchored" data-anchor-id="time-based-features-1"><em>10. Time-Based Features</em></h3>
+<p>What can you deduce about the interaction between Years Since Last Promotion and Attrition?<br>
+<strong>Solution:</strong> a. Those that are leaving have more years since last promotion than those that are staying.</p>
 
 
+</section>
+</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
@@ -759,6 +1100,38 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 });
 </script>
 </div> <!-- /content -->
+<script>var lightboxQuarto = GLightbox({"descPosition":"bottom","openEffect":"zoom","loop":false,"selector":".lightbox","closeEffect":"zoom"});
+(function() {
+  let previousOnload = window.onload;
+  window.onload = () => {
+    if (previousOnload) {
+      previousOnload();
+    }
+    lightboxQuarto.on('slide_before_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      const href = trigger.getAttribute('href');
+      if (href !== null) {
+        const imgEl = window.document.querySelector(`a[href="${href}"] img`);
+        if (imgEl !== null) {
+          const srcAttr = imgEl.getAttribute("src");
+          if (srcAttr && srcAttr.startsWith("data:")) {
+            slideConfig.href = srcAttr;
+          }
+        }
+      } 
+    });
+  
+    lightboxQuarto.on('slide_after_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(slideNode);
+      }
+    });
+  
+  };
+  
+})();
+          </script>
 
 
 
